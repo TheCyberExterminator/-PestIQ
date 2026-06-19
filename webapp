@@ -1,0 +1,2608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pestable">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#5B2D8E">
+<title>Pestable – Pest Report App</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root {
+    --purple: #5B2D8E;
+    --purple-mid: #7B4BC0;
+    --purple-light: #EDE7F6;
+    --purple-pale: #F3EEFF;
+    --bg: #EAECF2;
+    --card: #FFFFFF;
+    --text: #1A1A2E;
+    --sub: #666888;
+    --border: #D8D8E8;
+    --green: #2ECC71;
+    --red: #E74C3C;
+    --orange: #F39C12;
+    --accent-gold: #E8A020;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 2px 12px rgba(91,45,142,0.10);
+    --shadow-card: 0 4px 20px rgba(91,45,142,0.13);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    max-width: 430px;
+    margin: 0 auto;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* ─── TOPBAR ─── */
+  .topbar {
+    background: var(--purple);
+    color: white;
+    padding: 14px 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    min-height: 56px;
+  }
+  .topbar h1 { font-size: 17px; font-weight: 700; letter-spacing: 0.2px; }
+  .topbar .back-btn {
+    background: none; border: none; color: white; font-size: 22px;
+    cursor: pointer; padding: 4px 8px 4px 0; line-height: 1;
+  }
+  .topbar .icon-btn {
+    background: none; border: none; color: white; font-size: 20px;
+    cursor: pointer; padding: 4px; line-height: 1;
+  }
+  .topbar-right { display: flex; gap: 8px; align-items: center; }
+
+  /* ─── SCREENS ─── */
+  .screen { display: none; animation: fadeIn 0.18s ease; }
+  .screen.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateX(6px); } to { opacity: 1; transform: none; } }
+
+  /* ─── DASHBOARD ─── */
+  .dashboard-body { padding: 16px; padding-bottom: 90px; }
+
+  .stats-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow-card);
+    text-align: center;
+  }
+  .stats-card .stat-label { font-size: 13px; color: var(--sub); margin-bottom: 4px; }
+  .stats-card .stat-big { font-size: 48px; font-weight: 700; color: var(--purple); line-height: 1; margin-bottom: 12px; }
+  .stats-row { display: flex; justify-content: space-around; border-top: 1px solid var(--border); padding-top: 12px; }
+  .stats-cell { text-align: center; }
+  .stats-cell .num { font-size: 22px; font-weight: 700; color: var(--purple-mid); }
+  .stats-cell .lbl { font-size: 12px; color: var(--sub); margin-top: 2px; }
+
+  .weather-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+  }
+  .weather-card h3 { font-size: 14px; color: var(--sub); margin-bottom: 12px; text-align: center; }
+  .weather-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .weather-item { display: flex; flex-direction: column; }
+  .weather-item .wl { font-size: 12px; color: var(--sub); margin-bottom: 2px; font-weight: 600; }
+  .weather-item .wv { font-size: 14px; color: var(--text); font-weight: 500; }
+  .weather-icon { font-size: 36px; text-align: center; margin-bottom: 8px; }
+  .weather-bottom { display: flex; justify-content: flex-end; }
+
+  .btn-primary {
+    width: 100%; background: var(--purple); color: white;
+    border: none; border-radius: var(--radius-sm); padding: 16px;
+    font-size: 16px; font-weight: 700; cursor: pointer;
+    letter-spacing: 0.3px; transition: opacity 0.15s;
+  }
+  .btn-primary:active { opacity: 0.85; }
+
+  .btn-secondary {
+    width: 100%; background: var(--card); color: var(--purple);
+    border: 2px solid var(--purple); border-radius: var(--radius-sm); padding: 14px;
+    font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:active { background: var(--purple-pale); }
+
+  .btn-sm {
+    background: var(--purple); color: white; border: none;
+    border-radius: 20px; padding: 8px 16px; font-size: 13px;
+    font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .btn-sm.outline {
+    background: transparent; color: var(--purple); border: 1.5px solid var(--purple);
+  }
+
+  .section-gap { height: 14px; }
+
+  .reports-list { margin-bottom: 14px; }
+  .report-item {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 8px;
+    box-shadow: var(--shadow); cursor: pointer;
+    display: flex; align-items: center; gap: 12px;
+    transition: transform 0.1s;
+  }
+  .report-item:active { transform: scale(0.98); }
+  .report-icon { font-size: 28px; }
+  .report-info { flex: 1; min-width: 0; }
+  .report-info .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .report-info .meta { font-size: 12px; color: var(--sub); margin-top: 2px; }
+  .report-arrow { color: var(--sub); font-size: 18px; }
+  .severity-badge {
+    font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; white-space: nowrap;
+  }
+  .sev-low { background: #D5F5E3; color: #1E8449; }
+  .sev-medium { background: #FDEBD0; color: #A04000; }
+  .sev-high { background: #FADBD8; color: #922B21; }
+
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--sub); }
+  .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 15px; }
+
+  /* ─── FORM SCREENS ─── */
+  .form-body { padding: 16px; padding-bottom: 100px; }
+
+  .company-header {
+    background: var(--card); border-radius: var(--radius);
+    padding: 14px 16px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .company-header .cname { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .company-header .cmeta { font-size: 13px; color: var(--sub); line-height: 1.6; }
+
+  .form-section-title {
+    font-size: 15px; font-weight: 700; margin: 18px 0 10px;
+    color: var(--text);
+  }
+
+  .field-group { margin-bottom: 12px; }
+  .field-label { font-size: 13px; font-weight: 600; color: var(--sub); margin-bottom: 5px; display: block; }
+  .field-input {
+    width: 100%; background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px;
+    font-size: 15px; color: var(--text); outline: none;
+    transition: border-color 0.15s; -webkit-appearance: none;
+    font-family: inherit;
+  }
+  .field-input:focus { border-color: var(--purple-mid); }
+  .field-input::placeholder { color: #BCBCCC; }
+  textarea.field-input { resize: none; min-height: 90px; line-height: 1.5; }
+  select.field-input { cursor: pointer; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Pest multi-select */
+  .pest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .pest-chip {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+    font-size: 14px; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.12s; user-select: none;
+  }
+  .pest-chip.selected {
+    background: var(--purple-pale); border-color: var(--purple-mid);
+    color: var(--purple);
+  }
+  .pest-chip .pest-emoji { font-size: 18px; }
+  .pest-chip .pest-name { font-size: 13px; font-weight: 500; }
+
+  /* Areas inspected */
+  .area-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .area-chip {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 9px 12px;
+    font-size: 13px; cursor: pointer; text-align: center;
+    transition: all 0.12s; user-select: none; font-weight: 500;
+  }
+  .area-chip.selected {
+    background: var(--purple-pale); border-color: var(--purple-mid);
+    color: var(--purple);
+  }
+
+  /* Severity */
+  .severity-row { display: flex; gap: 8px; }
+  .sev-btn {
+    flex: 1; padding: 10px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--card);
+    font-size: 13px; font-weight: 600; cursor: pointer; text-align: center;
+    transition: all 0.12s; color: var(--sub);
+  }
+  .sev-btn.active-low { background: #D5F5E3; border-color: #1E8449; color: #1E8449; }
+  .sev-btn.active-medium { background: #FDEBD0; border-color: #A04000; color: #A04000; }
+  .sev-btn.active-high { background: #FADBD8; border-color: #922B21; color: #922B21; }
+
+  /* Treatment chips */
+  .treatment-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .treatment-chip {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: 20px; padding: 8px 14px;
+    font-size: 13px; cursor: pointer; font-weight: 500;
+    transition: all 0.12s; user-select: none; color: var(--sub);
+  }
+  .treatment-chip.selected {
+    background: var(--purple); border-color: var(--purple);
+    color: white;
+  }
+
+  /* Risk checkboxes */
+  .risk-list { background: var(--card); border-radius: var(--radius); overflow: hidden; }
+  .risk-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; border-bottom: 1px solid var(--border);
+    cursor: pointer;
+  }
+  .risk-item:last-child { border-bottom: none; }
+  .risk-item label { font-size: 15px; cursor: pointer; flex: 1; }
+  .custom-cb {
+    width: 22px; height: 22px; border: 2px solid var(--border);
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.12s; background: white;
+  }
+  .custom-cb.checked { background: var(--purple); border-color: var(--purple); }
+  .custom-cb.checked::after { content: '✓'; color: white; font-size: 13px; font-weight: 700; }
+
+  /* Weather in form */
+  .weather-form-card {
+    background: var(--card); border-radius: var(--radius);
+    border: 1.5px solid var(--border); overflow: hidden;
+  }
+  .weather-form-header {
+    background: var(--purple-pale); padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .weather-form-header h4 { font-size: 14px; font-weight: 700; color: var(--purple); }
+  .weather-status { font-size: 12px; color: var(--sub); }
+  .weather-form-body { padding: 12px 16px; }
+  .weather-fetched { color: var(--green); font-size: 12px; font-weight: 600; }
+  .weather-error { color: var(--red); font-size: 12px; }
+
+  /* Signature canvas */
+  .sig-container {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); position: relative; overflow: hidden;
+  }
+  .sig-canvas {
+    display: block; width: 100%; height: 140px; cursor: crosshair;
+    touch-action: none;
+  }
+  .sig-placeholder {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font-size: 13px; color: #BCBCCC; pointer-events: none; white-space: nowrap;
+  }
+  .sig-btns { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 10px; border-top: 1px solid var(--border); }
+  .sig-clear { font-size: 12px; color: var(--red); font-weight: 600; background: none; border: none; cursor: pointer; padding: 4px 8px; }
+
+  /* Step indicator */
+  .step-indicator {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 14px 16px 0;
+  }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 12px;
+    font-weight: 700;
+  }
+  .step-dot.done { background: var(--purple); color: white; }
+  .step-dot.active { background: var(--purple-mid); color: white; box-shadow: 0 0 0 4px rgba(91,45,142,0.2); }
+  .step-dot.pending { background: var(--border); color: var(--sub); }
+  .step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; }
+  .step-line.done { background: var(--purple); }
+
+  /* Bottom fixed nav */
+  .bottom-bar {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px; background: var(--card);
+    border-top: 1px solid var(--border); padding: 12px 16px;
+    display: flex; gap: 10px; z-index: 90;
+  }
+
+  /* ─── REPORT VIEW ─── */
+  .report-view-body { padding: 16px; padding-bottom: 100px; }
+  .report-view-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 12px; box-shadow: var(--shadow);
+  }
+  .rvc-title { font-size: 13px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .rvc-row { display: flex; margin-bottom: 7px; }
+  .rvc-key { font-size: 13px; color: var(--sub); width: 40%; flex-shrink: 0; font-weight: 500; }
+  .rvc-val { font-size: 13px; color: var(--text); font-weight: 600; flex: 1; }
+  .rvc-full { font-size: 13px; color: var(--text); line-height: 1.6; margin-top: 4px; }
+
+  .pests-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .pest-pill {
+    background: var(--purple-pale); color: var(--purple);
+    border-radius: 20px; padding: 4px 10px; font-size: 12px; font-weight: 600;
+  }
+
+  /* ─── PDF PRINT ─── */
+  #pdf-frame {
+    display: none;
+  }
+
+  .print-report {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    font-size: 11px;
+    color: #111;
+    padding: 24px;
+    max-width: 700px;
+    background: white;
+  }
+  .pr-header {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #5B2D8E;
+  }
+  .pr-company-name { font-size: 18px; font-weight: 800; color: #5B2D8E; }
+  .pr-report-title { font-size: 14px; font-weight: 700; color: #111; }
+  .pr-meta { font-size: 10px; color: #666; margin-top: 2px; }
+  .pr-logo { text-align: right; }
+  .pr-logo .logo-box {
+    width: 60px; height: 60px; border: 2px solid #5B2D8E; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: #5B2D8E; font-weight: 700; text-align: center;
+    background: #EDE7F6;
+  }
+
+  .pr-info-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin-bottom: 12px;
+  }
+  .pr-info-cell {
+    background: #f5f5f5; padding: 8px 10px; border-radius: 6px;
+  }
+  .pr-info-cell .k { font-size: 9px; text-transform: uppercase; color: #888; font-weight: 600; margin-bottom: 2px; }
+  .pr-info-cell .v { font-size: 12px; font-weight: 700; }
+
+  .pr-section-head {
+    background: #5B2D8E; color: white; padding: 5px 10px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; border-radius: 4px 4px 0 0; margin-top: 10px;
+  }
+  .pr-section-body {
+    border: 1px solid #ddd; border-top: none; padding: 10px;
+    border-radius: 0 0 4px 4px; margin-bottom: 8px;
+  }
+
+  .pr-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  .pr-table th {
+    background: #EDE7F6; font-size: 10px; font-weight: 700;
+    padding: 6px 8px; text-align: left; color: #5B2D8E;
+    border: 1px solid #ddd;
+  }
+  .pr-table td {
+    font-size: 10px; padding: 6px 8px; border: 1px solid #ddd;
+    vertical-align: top;
+  }
+  .pr-table tr:nth-child(even) td { background: #fafafa; }
+
+  .pr-weather-row {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+    margin-top: 6px;
+  }
+  .pr-weather-cell { background: #f0f0f0; padding: 6px; border-radius: 4px; text-align: center; }
+  .pr-weather-cell .k { font-size: 8px; color: #888; font-weight: 600; }
+  .pr-weather-cell .v { font-size: 11px; font-weight: 700; }
+
+  .pr-risks-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-top: 6px; }
+  .pr-risk-item { display: flex; align-items: center; gap: 5px; font-size: 10px; }
+  .pr-risk-cb { width: 12px; height: 12px; border: 1px solid #999; border-radius: 2px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .pr-risk-cb.on { background: #5B2D8E; border-color: #5B2D8E; }
+  .pr-risk-cb.on::after { content: '✓'; color: white; font-size: 8px; }
+
+  .pr-sig-row {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px;
+  }
+  .pr-sig-box {
+    border: 1px solid #ddd; border-radius: 6px; padding: 10px; text-align: center;
+  }
+  .pr-sig-label { font-size: 10px; font-weight: 700; color: #5B2D8E; margin-bottom: 6px; font-style: italic; }
+  .pr-sig-area { min-height: 50px; border-top: 1px solid #ddd; padding-top: 6px; }
+
+  .pr-cert { font-size: 10px; color: #E74C3C; text-align: center; font-style: italic; margin-top: 10px; }
+  .pr-footer {
+    margin-top: 14px; padding-top: 8px; border-top: 3px solid #E8A020;
+    background: #333; color: white; padding: 10px 14px; border-radius: 4px;
+    font-size: 10px; text-align: center;
+  }
+
+  /* ─── SETTINGS ─── */
+  .settings-body { padding: 16px; padding-bottom: 40px; }
+  .settings-section { margin-bottom: 20px; }
+  .settings-section-title { font-size: 12px; font-weight: 700; color: var(--sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; padding-left: 4px; }
+  .settings-card { background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .settings-item { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .settings-item:last-child { border-bottom: none; }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,30,40,0.92); color: white; padding: 10px 20px;
+    border-radius: 20px; font-size: 14px; font-weight: 500;
+    z-index: 999; white-space: nowrap; opacity: 0;
+    transition: opacity 0.2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  .loading-spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(91,45,142,0.3); border-top-color: var(--purple);
+    border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .char-count { font-size: 11px; color: var(--sub); text-align: right; margin-top: 3px; }
+  .info-banner {
+    background: #FFF3CD; border: 1px solid #FFEAA7; border-radius: var(--radius-sm);
+    padding: 10px 14px; font-size: 13px; color: #856404; margin-bottom: 12px;
+    display: flex; gap: 8px; align-items: flex-start;
+  }
+
+  /* ─── PPE CHIPS ─── */
+  .ppe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ppe-chip {
+    background: var(--card); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: 10px 12px;
+    font-size: 13px; cursor: pointer; text-align: left;
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.12s; user-select: none;
+  }
+  .ppe-chip.selected {
+    background: #E8F5E9; border-color: #2E7D32;
+    color: #1B5E20;
+  }
+  .ppe-emoji { font-size: 18px; flex-shrink: 0; }
+  .ppe-label { font-size: 12px; font-weight: 500; line-height: 1.3; }
+
+  @media (prefers-color-scheme: dark) {
+    /* intentionally not dark-moding this — field reports need high legibility */
+  }
+
+  /* ─── PRINT OVERLAY ─── */
+  #print-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 9999;
+    background: white; overflow-y: auto;
+    padding: 0;
+  }
+  #print-overlay.visible { display: block; }
+  .print-close-bar {
+    position: sticky; top: 0; z-index: 10;
+    background: var(--purple); color: white;
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 10px;
+  }
+  .print-close-bar h2 { font-size: 16px; font-weight: 700; }
+  .print-close-bar .pcb-btns { display: flex; gap: 8px; }
+  .pcb-btn {
+    background: white; color: var(--purple); border: none;
+    border-radius: 20px; padding: 8px 16px; font-size: 13px;
+    font-weight: 700; cursor: pointer;
+  }
+  .pcb-btn.outline { background: transparent; color: white; border: 2px solid white; }
+  #print-content { padding: 20px 16px 60px; max-width: 720px; margin: 0 auto; }
+
+  @media print {
+    body > *:not(#print-overlay) { display: none !important; }
+    #print-overlay { display: block !important; position: static !important; overflow: visible !important; }
+    .print-close-bar { display: none !important; }
+    #print-content { padding: 0 !important; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     SCREEN: DASHBOARD
+══════════════════════════════════════ -->
+<div id="screen-dashboard" class="screen active">
+  <div class="topbar">
+    <h1>🕷️ Pestable</h1>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="showScreen('screen-settings')" title="Settings">⚙️</button>
+    </div>
+  </div>
+
+  <div class="dashboard-body">
+    <!-- Stats -->
+    <div class="stats-card">
+      <div class="stat-label">Total Records</div>
+      <div class="stat-big" id="dash-total">0</div>
+      <div class="stats-row">
+        <div class="stats-cell"><div class="num" id="dash-pests">0</div><div class="lbl">Pests Found</div></div>
+        <div class="stats-cell"><div class="num" id="dash-jobs">0</div><div class="lbl">Jobs This Month</div></div>
+        <div class="stats-cell"><div class="num" id="dash-high">0</div><div class="lbl">High Risk</div></div>
+      </div>
+    </div>
+
+    <!-- Weather -->
+    <div class="weather-card">
+      <h3>📍 Sydney Weather Conditions</h3>
+      <div id="dash-weather-icon" class="weather-icon">🌤️</div>
+      <div class="weather-grid" id="dash-weather-grid">
+        <div class="weather-item"><span class="wl">Temperature</span><span class="wv" id="dw-temp">Fetching…</span></div>
+        <div class="weather-item"><span class="wl">Humidity</span><span class="wv" id="dw-humid">—</span></div>
+        <div class="weather-item"><span class="wl">Wind</span><span class="wv" id="dw-wind">—</span></div>
+        <div class="weather-item"><span class="wl">Conditions</span><span class="wv" id="dw-cond">—</span></div>
+      </div>
+      <div class="weather-bottom">
+        <button class="btn-sm" onclick="fetchWeatherDashboard()">Fetch ›</button>
+      </div>
+    </div>
+
+    <!-- New Record -->
+    <button class="btn-primary" onclick="startNewReport()" style="margin-bottom:14px;">
+      + Create New Record
+    </button>
+
+    <!-- Reports List -->
+    <div class="form-section-title">Recent Reports</div>
+    <div class="reports-list" id="reports-list">
+      <div class="empty-state">
+        <div class="emoji">📋</div>
+        <p>No reports yet.<br>Tap "Create New Record" to begin.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: NEW REPORT - STEP 1
+══════════════════════════════════════ -->
+<div id="screen-step1" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-dashboard')">‹</button>
+    <h1>New Record (Step 1)</h1>
+    <button class="icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot active" id="sdot1">1</div>
+    <div class="step-line" id="sline1"></div>
+    <div class="step-dot pending" id="sdot2">2</div>
+    <div class="step-line" id="sline2"></div>
+    <div class="step-dot pending" id="sdot3">3</div>
+  </div>
+
+  <div class="form-body">
+    <!-- Company header (from settings) -->
+    <div class="company-header">
+      <div class="cname" id="s1-company-name">—</div>
+      <div class="cmeta">
+        Treated By: <b id="s1-tech">—</b> &nbsp;|&nbsp;
+        Licence: <b id="s1-lic">—</b> &nbsp;|&nbsp;
+        Vehicle Reg: <b id="s1-vreg">—</b>
+      </div>
+    </div>
+
+    <div class="form-section-title">Client Information</div>
+
+    <div class="field-group">
+      <label class="field-label">Client Name *</label>
+      <input type="text" class="field-input" id="f-client-name" placeholder="Full name or company">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Email Address</label>
+      <input type="email" class="field-input" id="f-client-email" placeholder="client@email.com">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Phone</label>
+      <input type="tel" class="field-input" id="f-client-phone" placeholder="04XX XXX XXX">
+    </div>
+    <div class="field-group">
+      <label class="field-label" style="display:flex;justify-content:space-between;align-items:center;">
+        Treatment Address *
+        <button type="button" onclick="toggleAddressMode()" id="addr-mode-btn" style="font-size:11px;color:var(--purple);background:none;border:none;cursor:pointer;font-weight:700;text-decoration:underline;">Manual</button>
+      </label>
+      <!-- Autocomplete mode -->
+      <div id="addr-auto-wrap">
+        <input type="text" class="field-input" id="f-address-search" placeholder="Start typing address…" autocomplete="off" oninput="addressSearch(this.value)" onblur="hideAddressSuggestions()">
+        <div id="addr-suggestions" style="display:none;position:absolute;z-index:200;background:white;border:1.5px solid var(--purple-mid);border-radius:var(--radius-sm);box-shadow:var(--shadow-card);max-height:200px;overflow-y:auto;width:calc(100% - 32px);margin-top:2px;"></div>
+      </div>
+      <!-- Manual mode (hidden by default) -->
+      <input type="text" class="field-input" id="f-address" placeholder="Street, Suburb, NSW XXXX" style="display:none;">
+      <!-- Confirmed address display -->
+      <div id="addr-confirmed" style="display:none;background:var(--purple-pale);border:1.5px solid var(--purple-mid);border-radius:var(--radius-sm);padding:10px 12px;font-size:14px;font-weight:600;color:var(--purple);margin-top:4px;cursor:pointer;" onclick="clearConfirmedAddress()">
+        <span id="addr-confirmed-text"></span>
+        <span style="float:right;font-size:11px;color:var(--sub);">tap to change</span>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Property Type</label>
+      <select class="field-input" id="f-prop-type">
+        <option value="Residential">Residential</option>
+        <option value="Commercial">Commercial</option>
+        <option value="Industrial">Industrial</option>
+        <option value="Strata">Strata</option>
+        <option value="Government">Government</option>
+      </select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Job Type</label>
+      <select class="field-input" id="f-job-type">
+        <option value="Routine Treatment">Routine Treatment</option>
+        <option value="Service Call">Service Call</option>
+        <option value="Inspection Only">Inspection Only</option>
+        <option value="Emergency">Emergency</option>
+        <option value="Follow-up">Follow-up</option>
+      </select>
+    </div>
+
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Treatment Date *</label>
+        <input type="date" class="field-input" id="f-date">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Start Time</label>
+        <input type="time" class="field-input" id="f-start-time">
+      </div>
+    </div>
+    <div class="field-group">
+      <label class="field-label">End / Finish Time</label>
+      <input type="time" class="field-input" id="f-end-time">
+    </div>
+
+    <div class="form-section-title">Pests Identified</div>
+    <div class="pest-grid" id="pest-grid"></div>
+    <div class="field-group" style="margin-top:10px;">
+      <label class="field-label">Other Pest (if any)</label>
+      <input type="text" class="field-input" id="f-other-pest" placeholder="e.g. Silverfish">
+    </div>
+
+    <div class="form-section-title">Infestation Severity</div>
+    <div class="severity-row">
+      <button class="sev-btn" onclick="setSeverity('Low')" id="sev-low">🟢 Low</button>
+      <button class="sev-btn" onclick="setSeverity('Medium')" id="sev-medium">🟡 Medium</button>
+      <button class="sev-btn" onclick="setSeverity('High')" id="sev-high">🔴 High</button>
+    </div>
+
+    <div class="form-section-title">Areas Inspected</div>
+    <div class="area-grid" id="area-grid"></div>
+
+    <div class="form-section-title">Treatment Description</div>
+    <div class="field-group">
+      <textarea class="field-input" id="f-treatment-desc" rows="5" placeholder="Describe treatment applied to each area and pest type…" maxlength="1500" oninput="updateCharCount(this,'tc-count',1500)"></textarea>
+      <div class="char-count"><span id="tc-count">0</span>/1500</div>
+    </div>
+
+    <div class="form-section-title">Treatment Methods Applied</div>
+    <div class="treatment-row" id="treatment-row"></div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-secondary" onclick="showScreen('screen-dashboard')">Cancel</button>
+    <button class="btn-primary" onclick="goStep2()">Next ›</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: STEP 2 – PRODUCTS
+══════════════════════════════════════ -->
+<div id="screen-step2" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-step1')">‹</button>
+    <h1>New Record (Step 2)</h1>
+    <button class="icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot done">✓</div>
+    <div class="step-line done"></div>
+    <div class="step-dot active">2</div>
+    <div class="step-line"></div>
+    <div class="step-dot pending">3</div>
+  </div>
+
+  <div class="form-body">
+    <div class="info-banner">
+      ℹ️ Add the chemical products applied during this job. You can manage your product library in Settings.
+    </div>
+
+    <div class="form-section-title">Products Used</div>
+    <div id="products-on-job"></div>
+    <button class="btn-secondary" onclick="addProductToJob()" style="margin-top:8px;">+ Add Product</button>
+
+    <div class="form-section-title">Technician Notes</div>
+    <div class="field-group">
+      <textarea class="field-input" id="f-tech-notes" rows="4"
+        placeholder="Recommendations, follow-up required, customer advice given…"
+        maxlength="1000" oninput="updateCharCount(this,'tn-count',1000)"></textarea>
+      <div class="char-count"><span id="tn-count">0</span>/1000</div>
+    </div>
+
+    <div class="form-section-title">Aftercare / Warranty</div>
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Warranty Period</label>
+        <input type="text" class="field-input" id="f-warranty" placeholder="e.g. 3 months">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Holding Period</label>
+        <select class="field-input" id="f-holding">
+          <option>2 hours</option>
+          <option>4 hours</option>
+          <option>6 hours</option>
+          <option>12 hours</option>
+          <option>24 hours</option>
+          <option>Not applicable</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-secondary" onclick="showScreen('screen-step1')">‹ Back</button>
+    <button class="btn-primary" onclick="goStep3()">Next ›</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: STEP 3 – OTHER INFO + GENERATE
+══════════════════════════════════════ -->
+<div id="screen-step3" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-step2')">‹</button>
+    <h1>Other Info (Step 3)</h1>
+    <button class="icon-btn" onclick="showScreen('screen-settings')">⚙️</button>
+  </div>
+
+  <div class="step-indicator">
+    <div class="step-dot done">✓</div>
+    <div class="step-line done"></div>
+    <div class="step-dot done">✓</div>
+    <div class="step-line done"></div>
+    <div class="step-dot active">3</div>
+  </div>
+
+  <div class="form-body">
+
+    <!-- Weather -->
+    <div class="weather-form-card">
+      <div class="weather-form-header">
+        <h4>🌦️ Weather at Time of Treatment</h4>
+        <div style="display:flex;gap:6px;">
+          <button class="btn-sm outline" id="manual-weather-btn" onclick="toggleManualWeather()">Manual</button>
+          <button class="btn-sm" onclick="fetchWeatherForReport()" id="fetch-weather-btn">Fetch ›</button>
+        </div>
+      </div>
+      <div class="weather-form-body">
+        <div id="weather-form-status" class="weather-status" style="margin-bottom:10px;"></div>
+        <div class="two-col">
+          <div class="field-group">
+            <label class="field-label">Wind Speed</label>
+            <input type="text" class="field-input" id="fw-wind" placeholder="e.g. 3.0 m/s">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Wind Direction</label>
+            <select class="field-input" id="fw-winddir">
+              <option value="">— Select —</option>
+              <option>N</option><option>NNE</option><option>NE</option><option>ENE</option>
+              <option>E</option><option>ESE</option><option>SE</option><option>SSE</option>
+              <option>S</option><option>SSW</option><option>SW</option><option>WSW</option>
+              <option>W</option><option>WNW</option><option>NW</option><option>NNW</option>
+            </select>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="field-group">
+            <label class="field-label">Temperature (°C)</label>
+            <input type="number" class="field-input" id="fw-temp" placeholder="e.g. 24">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Humidity (%)</label>
+            <input type="number" class="field-input" id="fw-humid" placeholder="e.g. 62">
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Conditions</label>
+          <select class="field-input" id="fw-cond">
+            <option value="">— Select —</option>
+            <option>Clear / Sunny</option>
+            <option>Partly Cloudy</option>
+            <option>Mostly Cloudy</option>
+            <option>Overcast</option>
+            <option>Foggy / Misty</option>
+            <option>Light Drizzle</option>
+            <option>Light Rain</option>
+            <option>Moderate Rain</option>
+            <option>Heavy Rain</option>
+            <option>Thunderstorm</option>
+            <option>Windy</option>
+            <option>Hot &amp; Humid</option>
+          </select>
+        </div>
+        <!-- Wind speed quick-pick -->
+        <div id="wind-speed-hints" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:-4px;margin-bottom:8px;">
+          <span style="font-size:11px;color:var(--sub);align-self:center;">Quick:</span>
+          <button class="treatment-chip" style="padding:5px 10px;font-size:12px;" onclick="document.getElementById('fw-wind').value='Calm (0–1 m/s)'">Calm</button>
+          <button class="treatment-chip" style="padding:5px 10px;font-size:12px;" onclick="document.getElementById('fw-wind').value='Light (1–5 m/s)'">Light</button>
+          <button class="treatment-chip" style="padding:5px 10px;font-size:12px;" onclick="document.getElementById('fw-wind').value='Moderate (5–10 m/s)'">Moderate</button>
+          <button class="treatment-chip" style="padding:5px 10px;font-size:12px;" onclick="document.getElementById('fw-wind').value='Strong (>10 m/s)'">Strong</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section-title">Risks at Site</div>
+    <div class="risk-list" id="risk-list"></div>
+
+    <div class="form-section-title">PPE Worn</div>
+    <div class="ppe-grid" id="ppe-grid"></div>
+    <div class="field-group" style="margin-top:10px;">
+      <label class="field-label">Other PPE (if any)</label>
+      <input type="text" class="field-input" id="f-ppe-other" placeholder="e.g. Chemical splash suit">
+    </div>
+
+    <div class="form-section-title">Specific Precautions Taken</div>
+    <div class="field-group">
+      <textarea class="field-input" id="f-precautions" rows="3"
+        placeholder="Any specific precautions undertaken at the site to minimise risks…"></textarea>
+    </div>
+
+    <div class="form-section-title">Hygiene Recommendations</div>
+    <div class="field-group">
+      <textarea class="field-input" id="f-hygiene" rows="3"
+        placeholder="Hygiene solutions and advice given to client…"></textarea>
+    </div>
+
+    <!-- Technician Signature -->
+    <div class="form-section-title">Technician Signature</div>
+    <div class="sig-container">
+      <canvas class="sig-canvas" id="tech-sig-canvas" width="800" height="200"></canvas>
+      <div class="sig-placeholder" id="tech-sig-placeholder">Sign here</div>
+      <div class="sig-btns">
+        <button class="sig-clear" onclick="clearSig('tech')">Clear</button>
+      </div>
+    </div>
+
+    <!-- Client Signature -->
+    <div class="form-section-title">Client Signature</div>
+    <div class="sig-container">
+      <canvas class="sig-canvas" id="client-sig-canvas" width="800" height="200"></canvas>
+      <div class="sig-placeholder" id="client-sig-placeholder">Client signs here</div>
+      <div class="sig-btns">
+        <button class="sig-clear" onclick="clearSig('client')">Clear</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-bar">
+    <button class="btn-secondary" onclick="showScreen('screen-step2')">‹ Back</button>
+    <button class="btn-primary" onclick="generateReport()">Generate Report ›</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: REPORT VIEW
+══════════════════════════════════════ -->
+<div id="screen-report-view" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-dashboard')">‹</button>
+    <h1>Pest Advice Report</h1>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="printCurrentReport()">↑</button>
+      <button class="icon-btn" onclick="deleteCurrentReport()">🗑️</button>
+    </div>
+  </div>
+
+  <div class="report-view-body">
+    <!-- Print button -->
+    <button class="btn-primary" onclick="printCurrentReport()" style="margin-bottom:14px;">
+      📄 View &amp; Export PDF
+    </button>
+
+    <div id="report-view-content"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SCREEN: SETTINGS
+══════════════════════════════════════ -->
+<div id="screen-settings" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="showScreen('screen-dashboard')">‹</button>
+    <h1>Settings</h1>
+    <button class="icon-btn" onclick="saveSettings()">Save</button>
+  </div>
+
+  <div class="settings-body">
+    <div class="settings-section">
+      <div class="settings-section-title">Technician</div>
+      <div class="settings-card">
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Name</label>
+            <input type="text" class="field-input" id="set-tech-name" placeholder="Your full name">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Pest Control Licence #</label>
+            <input type="text" class="field-input" id="set-licence" placeholder="e.g. 5093502">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Vehicle Registration</label>
+            <input type="text" class="field-input" id="set-vreg" placeholder="e.g. ABC123">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Company</div>
+      <div class="settings-card">
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Company Name</label>
+            <input type="text" class="field-input" id="set-company" placeholder="e.g. Pestable Pty Ltd">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">ABN</label>
+            <input type="text" class="field-input" id="set-abn" placeholder="XX XXX XXX XXX">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Phone</label>
+            <input type="tel" class="field-input" id="set-phone" placeholder="02 XXXX XXXX">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Email</label>
+            <input type="email" class="field-input" id="set-email" placeholder="info@yourcompany.com.au">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Address</label>
+            <input type="text" class="field-input" id="set-address" placeholder="Company address">
+          </div>
+        </div>
+        <div class="settings-item">
+          <div class="field-group" style="margin-bottom:0">
+            <label class="field-label">Website</label>
+            <input type="text" class="field-input" id="set-website" placeholder="www.yourcompany.com.au">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <div class="settings-section-title">Chemical Products Library</div>
+      <div id="products-library"></div>
+      <button class="btn-secondary" onclick="addProductToLibrary()" style="margin-top:8px;">+ Add Product</button>
+    </div>
+
+    <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+  </div>
+</div>
+
+<!-- Hidden print area -->
+<div id="pdf-frame"></div>
+
+<!-- Print Overlay (replaces window.open for iOS Safari) -->
+<div id="print-overlay">
+  <div class="print-close-bar">
+    <h2>📄 Pest Advice Report</h2>
+    <div class="pcb-btns">
+      <button class="pcb-btn" onclick="exportPDF()">⬇ Export PDF</button>
+      <button class="pcb-btn outline" onclick="closePrintOverlay()">✕ Close</button>
+    </div>
+  </div>
+  <div id="print-content"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+// STATE
+// ══════════════════════════════════════
+let currentReport = {};
+let currentReportId = null;
+let weatherCache = null;
+
+const PESTS = [
+  { id:'cockroach', name:'German Cockroaches', emoji:'🪳' },
+  { id:'native-cockroach', name:'Native Cockroaches', emoji:'🪲' },
+  { id:'ants', name:'Ants', emoji:'🐜' },
+  { id:'termites', name:'Termites', emoji:'🪵' },
+  { id:'rodents', name:'Rodents', emoji:'🐀' },
+  { id:'spiders', name:'Spiders', emoji:'🕷️' },
+  { id:'bedbugs', name:'Bedbugs', emoji:'🛏️' },
+  { id:'fleas', name:'Fleas', emoji:'🐾' },
+  { id:'wasps', name:'Wasps', emoji:'🐝' },
+  { id:'silverfish', name:'Silverfish', emoji:'🐛' },
+  { id:'carpet-beetle', name:'Carpet Beetle', emoji:'🪲' },
+  { id:'earwigs', name:'Earwigs', emoji:'🐛' },
+];
+
+const AREAS = [
+  'Kitchen','Bathroom','Laundry','Living Areas','Bedrooms',
+  'Roof Void','Subfloor','Garage','Perimeter','Garden / Yard',
+  'Exterior Walls','Common Areas','Storeroom','Ceiling Cavity'
+];
+
+const TREATMENTS = [
+  'Spray','Gel Bait','Dust','Fumigation',
+  'Monitoring Station','Traps','Granules','Surface Spray','Foam'
+];
+
+const RISKS = [
+  'People','Children','Caged Bird(s)','Fish / Other Animals',
+  'Child Play Area','Water Tanks','Swimming Pool','Clothes on Line',
+  'Vegetable Garden','Pet Food / Bowls'
+];
+
+const PPE_ITEMS = [
+  { id:'overalls',    label:'Full Overalls',        emoji:'🦺' },
+  { id:'hat',         label:'Wide Brim Hat',         emoji:'👒' },
+  { id:'glasses',     label:'Safety Glasses',        emoji:'🥽' },
+  { id:'gloves',      label:'Nitrile Gloves',        emoji:'🧤' },
+  { id:'p2mask',      label:'P2 Respirator Mask',    emoji:'😷' },
+  { id:'halfface',    label:'Half-Face Respirator',  emoji:'😷' },
+  { id:'boots',       label:'Safety Boots',          emoji:'👢' },
+  { id:'apron',       label:'Chemical Apron',        emoji:'🥼' },
+  { id:'disposable',  label:'Disposable Suit',       emoji:'🦺' },
+  { id:'earmuffs',    label:'Ear Protection',        emoji:'🎧' },
+];
+
+const DEFAULT_PRODUCTS = [
+  { name:'Talon XT Pro',              active:'Brodifacoum',                        method:'Bait station placement',               usedFor:'Rodents' },
+  { name:'Biflex Aqua',               active:'Bifenthrin',                         method:'Point of run off spray',               usedFor:'Ants, Spiders, Cockroaches, Wasps' },
+  { name:'Biflex Ultra',              active:'Bifenthrin',                         method:'Point of run off spray',               usedFor:'Ants, Bedbugs, Wasps, Carpet Beetle' },
+  { name:'Temprid 75',                active:'Imidacloprid, Beta-cyfluthrin',       method:'Low volume spray',                     usedFor:'Bed Bugs, Cockroaches, Ants, Spiders' },
+  { name:'Secrila WSG',               active:'Imidacloprid',                       method:'Dilute and spray, soil drench',         usedFor:'Termites, Ants, Cockroaches' },
+  { name:'Demand Duo',                active:'Lambda-cyhalothrin, Imidacloprid',    method:'Surface spray to point of run off',     usedFor:'Ants, Cockroaches, Spiders, Wasps, Fleas' },
+  { name:'Stardust Pro',              active:'Permeethrin, Triflumuron',            method:'5g/m² applied with a powder blower',   usedFor:'Ants, Bee, Wasps, Carpet Beetle' },
+  { name:'Clearout Plus IGR',         active:'Permethrin, Pyriproxyfen',            method:'Surface spray',                        usedFor:'Fleas, Cockroaches, Ants, Silverfish' },
+  { name:'Starycide IGR',             active:'Triflumuron',                         method:'Spray to harbourage areas',            usedFor:'Cockroaches, Flies, Ants' },
+  { name:'Sumilarv IGR',              active:'Pyriproxyfen',                        method:'Dilute and spray',                     usedFor:'Mosquitoes, Fleas, Cockroaches' },
+  { name:'Advion Evolution Cockroach Gel', active:'Indoxacarb',                    method:'Gel bait – 0.5g spots to harbourage',  usedFor:'German Cockroaches, Native Cockroaches' },
+  { name:'Abolish Pro Cockroach Gel', active:'Fipronil',                           method:'Gel bait – spots to harbourage areas', usedFor:'German Cockroaches, Native Cockroaches' },
+  { name:'Goliath Cockroach Gel',     active:'Fipronil',                           method:'Gel bait – spots to harbourage areas', usedFor:'German Cockroaches, Native Cockroaches' },
+  { name:'Advion Ant Gel',            active:'Indoxacarb',                         method:'Gel bait – trails and entry points',   usedFor:'Ants' },
+  { name:'Attractant Pro Ant Gel',    active:'Fipronil + food attractant',         method:'Gel bait – trails and nesting areas',  usedFor:'Ants' },
+];
+
+// ══════════════════════════════════════
+// INIT
+// ══════════════════════════════════════
+function init() {
+  buildPestGrid();
+  buildAreaGrid();
+  buildTreatmentRow();
+  buildRiskList();
+  buildPpeGrid();
+  seedDefaultProducts();
+  loadSettings();
+  renderProductsLibrary();
+  refreshDashboard();
+  setTodayDefaults();
+  fetchWeatherDashboard();
+  initSignatures();
+}
+
+function seedDefaultProducts() {
+  const existing = localStorage.getItem('pestable_settings');
+  if (existing) {
+    try {
+      const s = JSON.parse(existing);
+      if (s.products && s.products.length > 0) return; // already seeded
+    } catch {}
+  }
+  const settings = existing ? JSON.parse(existing) : {};
+  settings.products = DEFAULT_PRODUCTS.map(p => ({ ...p }));
+  localStorage.setItem('pestable_settings', JSON.stringify(settings));
+}
+
+function setTodayDefaults() {
+  const now = new Date();
+  const dateStr = now.toISOString().split('T')[0];
+  const timeStr = now.toTimeString().slice(0,5);
+  document.getElementById('f-date').value = dateStr;
+  document.getElementById('f-start-time').value = timeStr;
+}
+
+// ══════════════════════════════════════
+// SCREEN NAV
+// ══════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if (id === 'screen-dashboard') refreshDashboard();
+  if (id === 'screen-settings') loadSettingsUI();
+}
+
+// ══════════════════════════════════════
+// BUILD FORM ELEMENTS
+// ══════════════════════════════════════
+function buildPestGrid() {
+  const grid = document.getElementById('pest-grid');
+  grid.innerHTML = PESTS.map(p => `
+    <div class="pest-chip" id="pest-${p.id}" onclick="togglePest('${p.id}')">
+      <span class="pest-emoji">${p.emoji}</span>
+      <span class="pest-name">${p.name}</span>
+    </div>
+  `).join('');
+}
+
+function buildAreaGrid() {
+  const grid = document.getElementById('area-grid');
+  grid.innerHTML = AREAS.map(a => `
+    <div class="area-chip" id="area-${a.replace(/\W/g,'-')}" onclick="toggleArea('${a}')">${a}</div>
+  `).join('');
+}
+
+function buildTreatmentRow() {
+  const row = document.getElementById('treatment-row');
+  row.innerHTML = TREATMENTS.map(t => `
+    <div class="treatment-chip" id="trt-${t.replace(/\W/g,'-')}" onclick="toggleTreatment('${t}')">${t}</div>
+  `).join('');
+}
+
+function buildRiskList() {
+  const list = document.getElementById('risk-list');
+  list.innerHTML = RISKS.map(r => `
+    <div class="risk-item" onclick="toggleRisk('${r}')">
+      <label>${r}</label>
+      <div class="custom-cb" id="risk-${r.replace(/\W/g,'-')}"></div>
+    </div>
+  `).join('');
+}
+
+function buildPpeGrid() {
+  const grid = document.getElementById('ppe-grid');
+  if (!grid) return;
+  grid.innerHTML = PPE_ITEMS.map(p => `
+    <div class="ppe-chip" id="ppe-${p.id}" onclick="togglePpe('${p.id}')">
+      <span class="ppe-emoji">${p.emoji}</span>
+      <span class="ppe-label">${p.label}</span>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// MULTI-SELECT TOGGLES
+// ══════════════════════════════════════
+let selectedPests = [];
+function togglePest(id) {
+  const el = document.getElementById(`pest-${id}`);
+  if (selectedPests.includes(id)) {
+    selectedPests = selectedPests.filter(p => p !== id);
+    el.classList.remove('selected');
+  } else {
+    selectedPests.push(id);
+    el.classList.add('selected');
+  }
+}
+
+let selectedAreas = [];
+function toggleArea(name) {
+  const key = `area-${name.replace(/\W/g,'-')}`;
+  const el = document.getElementById(key);
+  if (selectedAreas.includes(name)) {
+    selectedAreas = selectedAreas.filter(a => a !== name);
+    el.classList.remove('selected');
+  } else {
+    selectedAreas.push(name);
+    el.classList.add('selected');
+  }
+}
+
+let selectedTreatments = [];
+function toggleTreatment(name) {
+  const key = `trt-${name.replace(/\W/g,'-')}`;
+  const el = document.getElementById(key);
+  if (selectedTreatments.includes(name)) {
+    selectedTreatments = selectedTreatments.filter(t => t !== name);
+    el.classList.remove('selected');
+  } else {
+    selectedTreatments.push(name);
+    el.classList.add('selected');
+  }
+}
+
+let selectedRisks = [];
+function toggleRisk(name) {
+  const key = `risk-${name.replace(/\W/g,'-')}`;
+  const el = document.getElementById(key);
+  if (selectedRisks.includes(name)) {
+    selectedRisks = selectedRisks.filter(r => r !== name);
+    el.classList.remove('checked');
+  } else {
+    selectedRisks.push(name);
+    el.classList.add('checked');
+  }
+}
+
+let selectedPpe = [];
+function togglePpe(id) {
+  const el = document.getElementById(`ppe-${id}`);
+  if (selectedPpe.includes(id)) {
+    selectedPpe = selectedPpe.filter(p => p !== id);
+    el.classList.remove('selected');
+  } else {
+    selectedPpe.push(id);
+    el.classList.add('selected');
+  }
+}
+
+let selectedSeverity = '';
+function setSeverity(sev) {
+  selectedSeverity = sev;
+  ['Low','Medium','High'].forEach(s => {
+    const btn = document.getElementById(`sev-${s.toLowerCase()}`);
+    btn.className = 'sev-btn';
+    if (s === sev) btn.classList.add(`active-${s.toLowerCase()}`);
+  });
+}
+
+// ══════════════════════════════════════
+// PRODUCTS (job)
+// ══════════════════════════════════════
+let jobProducts = [];
+
+function addProductToJob() {
+  const settings = loadSettingsData();
+  const library = settings.products || [];
+  if (library.length === 0) {
+    showToast('Add products in Settings first');
+    return;
+  }
+  const opts = library.map((p, i) => `<option value="${i}">${p.name}</option>`).join('');
+  const idx = jobProducts.length;
+  jobProducts.push({ libIdx: 0, batchNo: '', amountUsed: '' });
+  renderJobProducts(library);
+}
+
+function removeJobProduct(idx) {
+  jobProducts.splice(idx, 1);
+  const settings = loadSettingsData();
+  renderJobProducts(settings.products || []);
+}
+
+function renderJobProducts(library) {
+  const el = document.getElementById('products-on-job');
+  if (jobProducts.length === 0) {
+    el.innerHTML = '<p style="color:var(--sub);font-size:14px;text-align:center;padding:20px 0;">No products added yet</p>';
+    return;
+  }
+  el.innerHTML = jobProducts.map((jp, i) => {
+    const p = library[jp.libIdx] || {};
+    const opts = library.map((lib, li) => `<option value="${li}" ${li===jp.libIdx?'selected':''}>${lib.name}</option>`).join('');
+    const isCustomAmt = jp.amountUsed && !AMOUNT_OPTIONS.includes(jp.amountUsed);
+    const amtSelect = `<select class="field-input" onchange="updateAmountUsed(${i},this.value)">
+      <option value="">— Select —</option>
+      <optgroup label="Liquid">
+        <option ${jp.amountUsed==='500ml'?'selected':''}>500ml</option>
+        <option ${jp.amountUsed==='1L'?'selected':''}>1L</option>
+        <option ${jp.amountUsed==='2L'?'selected':''}>2L</option>
+        <option ${jp.amountUsed==='3L'?'selected':''}>3L</option>
+        <option ${jp.amountUsed==='5L'?'selected':''}>5L</option>
+        <option ${jp.amountUsed==='10L'?'selected':''}>10L</option>
+        <option ${jp.amountUsed==='20L'?'selected':''}>20L</option>
+        <option ${jp.amountUsed==='50L'?'selected':''}>50L</option>
+      </optgroup>
+      <optgroup label="Blocks">
+        <option ${jp.amountUsed==='2 blocks'?'selected':''}>2 blocks</option>
+        <option ${jp.amountUsed==='4 blocks'?'selected':''}>4 blocks</option>
+        <option ${jp.amountUsed==='10 blocks'?'selected':''}>10 blocks</option>
+        <option ${jp.amountUsed==='15 blocks'?'selected':''}>15 blocks</option>
+      </optgroup>
+      <optgroup label="Gel Dots">
+        <option ${jp.amountUsed==='2 dots'?'selected':''}>2 dots</option>
+        <option ${jp.amountUsed==='5 dots'?'selected':''}>5 dots</option>
+        <option ${jp.amountUsed==='10 dots'?'selected':''}>10 dots</option>
+        <option ${jp.amountUsed==='20 dots'?'selected':''}>20 dots</option>
+        <option ${jp.amountUsed==='40 dots'?'selected':''}>40 dots</option>
+      </optgroup>
+      <option value="__custom__" ${isCustomAmt?'selected':''}>Custom…</option>
+    </select>`;
+    return `
+    <div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;border:1.5px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <b style="font-size:14px;">Product ${i+1}</b>
+        <button onclick="removeJobProduct(${i})" style="background:none;border:none;color:var(--red);font-size:13px;cursor:pointer;font-weight:600;">Remove</button>
+      </div>
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Product</label>
+        <select class="field-input" onchange="updateJobProduct(${i},'libIdx',this.value)">${opts}</select>
+      </div>
+      <div class="two-col">
+        <div class="field-group" style="margin-bottom:8px;">
+          <label class="field-label">Batch No.</label>
+          <input type="text" class="field-input" placeholder="Batch #" value="${jp.batchNo||''}" oninput="updateJobProductDirect(${i},'batchNo',this.value)">
+        </div>
+        <div class="field-group" style="margin-bottom:8px;">
+          <label class="field-label">Amount Used</label>
+          ${amtSelect}
+        </div>
+      </div>
+      ${isCustomAmt ? `
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Custom Amount</label>
+        <input type="text" class="field-input" placeholder="e.g. 750ml, 3 bags…" value="${jp.amountUsed||''}" oninput="updateJobProductDirect(${i},'amountUsed',this.value)">
+      </div>` : ''}
+      ${jp.amountUsed==='__custom__' ? `
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Custom Amount</label>
+        <input type="text" class="field-input" placeholder="e.g. 750ml, 3 bags…" oninput="updateJobProductDirect(${i},'amountUsed',this.value)">
+      </div>` : ''}
+      <div style="margin-top:6px;font-size:12px;color:var(--sub);line-height:1.5;">
+        <b>Active:</b> ${p.active || '—'}<br><b>Method:</b> ${p.method || '—'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateJobProduct(idx, key, val) {
+  if (key === 'libIdx') val = parseInt(val);
+  jobProducts[idx][key] = val;
+  const settings = loadSettingsData();
+  renderJobProducts(settings.products || []);
+}
+
+function updateJobProductDirect(idx, key, val) {
+  jobProducts[idx][key] = val;
+  // no re-render, just update in place
+}
+
+function updateAmountUsed(idx, val) {
+  if (val === '__custom__') {
+    jobProducts[idx].amountUsed = '__custom__';
+  } else {
+    jobProducts[idx].amountUsed = val;
+  }
+  const settings = loadSettingsData();
+  renderJobProducts(settings.products || []);
+}
+
+const AMOUNT_OPTIONS = [
+  '500ml','1L','2L','3L','5L','10L','20L','50L',
+  '2 blocks','4 blocks','10 blocks','15 blocks',
+  '2 dots','5 dots','10 dots','20 dots','40 dots'
+];
+
+// ══════════════════════════════════════
+// ADDRESS AUTOCOMPLETE (Nominatim / OSM — no API key)
+// ══════════════════════════════════════
+let addrManualMode = false;
+let addrSearchTimeout = null;
+let confirmedAddress = '';
+
+function toggleAddressMode() {
+  addrManualMode = !addrManualMode;
+  const btn = document.getElementById('addr-mode-btn');
+  const autoWrap = document.getElementById('addr-auto-wrap');
+  const manualInput = document.getElementById('f-address');
+  const confirmed = document.getElementById('addr-confirmed');
+  if (addrManualMode) {
+    btn.textContent = 'Auto Lookup';
+    autoWrap.style.display = 'none';
+    confirmed.style.display = 'none';
+    manualInput.style.display = '';
+    manualInput.focus();
+  } else {
+    btn.textContent = 'Manual';
+    autoWrap.style.display = '';
+    manualInput.style.display = 'none';
+  }
+}
+
+function addressSearch(val) {
+  clearTimeout(addrSearchTimeout);
+  const sug = document.getElementById('addr-suggestions');
+  if (val.length < 4) { sug.style.display = 'none'; return; }
+  addrSearchTimeout = setTimeout(async () => {
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&countrycodes=au&limit=6&q=${encodeURIComponent(val)}`;
+      const res = await fetch(url, { headers: { 'Accept-Language': 'en' } });
+      const data = await res.json();
+      if (!data.length) { sug.style.display = 'none'; return; }
+      sug.style.display = 'block';
+      sug.innerHTML = data.map(item => {
+        const display = item.display_name;
+        return `<div onclick="selectAddress('${display.replace(/'/g,"\\'")}'); hideAddressSuggestions();"
+          style="padding:11px 14px;font-size:13px;border-bottom:1px solid #eee;cursor:pointer;line-height:1.4;"
+          onmousedown="event.preventDefault()">
+          📍 ${display}
+        </div>`;
+      }).join('');
+    } catch(e) {
+      sug.style.display = 'none';
+    }
+  }, 400);
+}
+
+function selectAddress(addr) {
+  confirmedAddress = addr;
+  document.getElementById('f-address-search').value = '';
+  document.getElementById('addr-confirmed-text').textContent = addr;
+  document.getElementById('addr-confirmed').style.display = 'block';
+  document.getElementById('addr-suggestions').style.display = 'none';
+  // Also populate hidden manual field so generateReport picks it up
+  document.getElementById('f-address').value = addr;
+}
+
+function clearConfirmedAddress() {
+  confirmedAddress = '';
+  document.getElementById('addr-confirmed').style.display = 'none';
+  document.getElementById('f-address').value = '';
+  document.getElementById('f-address-search').value = '';
+  document.getElementById('f-address-search').focus();
+}
+
+function hideAddressSuggestions() {
+  setTimeout(() => {
+    const sug = document.getElementById('addr-suggestions');
+    if (sug) sug.style.display = 'none';
+  }, 200);
+}
+
+function getAddress() {
+  if (addrManualMode) return document.getElementById('f-address').value.trim();
+  return confirmedAddress || document.getElementById('f-address').value.trim();
+}
+
+// ══════════════════════════════════════
+// SETTINGS / PRODUCTS LIBRARY
+// ══════════════════════════════════════
+function loadSettingsData() {
+  try { return JSON.parse(localStorage.getItem('pestable_settings') || '{}'); } catch { return {}; }
+}
+
+function saveSettings() {
+  const settings = loadSettingsData();
+  settings.techName = document.getElementById('set-tech-name').value;
+  settings.licence = document.getElementById('set-licence').value;
+  settings.vreg = document.getElementById('set-vreg').value;
+  settings.company = document.getElementById('set-company').value;
+  settings.abn = document.getElementById('set-abn').value;
+  settings.phone = document.getElementById('set-phone').value;
+  settings.email = document.getElementById('set-email').value;
+  settings.address = document.getElementById('set-address').value;
+  settings.website = document.getElementById('set-website').value;
+  localStorage.setItem('pestable_settings', JSON.stringify(settings));
+  showToast('Settings saved');
+  loadSettings();
+}
+
+function loadSettings() {
+  const s = loadSettingsData();
+  document.getElementById('s1-company-name').textContent = s.company || '(Company not set)';
+  document.getElementById('s1-tech').textContent = s.techName || '—';
+  document.getElementById('s1-lic').textContent = s.licence || '—';
+  document.getElementById('s1-vreg').textContent = s.vreg || '—';
+}
+
+function loadSettingsUI() {
+  const s = loadSettingsData();
+  document.getElementById('set-tech-name').value = s.techName || '';
+  document.getElementById('set-licence').value = s.licence || '';
+  document.getElementById('set-vreg').value = s.vreg || '';
+  document.getElementById('set-company').value = s.company || '';
+  document.getElementById('set-abn').value = s.abn || '';
+  document.getElementById('set-phone').value = s.phone || '';
+  document.getElementById('set-email').value = s.email || '';
+  document.getElementById('set-address').value = s.address || '';
+  document.getElementById('set-website').value = s.website || '';
+  renderProductsLibrary();
+}
+
+function addProductToLibrary() {
+  const settings = loadSettingsData();
+  if (!settings.products) settings.products = [];
+  settings.products.push({ name: '', active: '', method: '', usedFor: '' });
+  localStorage.setItem('pestable_settings', JSON.stringify(settings));
+  renderProductsLibrary();
+}
+
+function removeProductFromLibrary(idx) {
+  const settings = loadSettingsData();
+  settings.products.splice(idx, 1);
+  localStorage.setItem('pestable_settings', JSON.stringify(settings));
+  renderProductsLibrary();
+}
+
+function updateProductField(idx, field, val) {
+  const settings = loadSettingsData();
+  settings.products[idx][field] = val;
+  localStorage.setItem('pestable_settings', JSON.stringify(settings));
+}
+
+function renderProductsLibrary() {
+  const el = document.getElementById('products-library');
+  if (!el) return;
+  const settings = loadSettingsData();
+  const products = settings.products || [];
+  if (products.length === 0) {
+    el.innerHTML = '<p style="color:var(--sub);font-size:13px;padding:8px 4px;">No products added yet. Tap below to add.</p>';
+    return;
+  }
+  el.innerHTML = products.map((p, i) => `
+    <div style="background:var(--card);border-radius:var(--radius-sm);padding:14px;margin-bottom:8px;border:1.5px solid var(--border);">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+        <b style="font-size:14px;">Product ${i+1}</b>
+        <button onclick="removeProductFromLibrary(${i})" style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-weight:600;">Remove</button>
+      </div>
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Product Name</label>
+        <input class="field-input" type="text" value="${p.name}" placeholder="e.g. Biflex Ultra" oninput="updateProductField(${i},'name',this.value)">
+      </div>
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Active Ingredient(s)</label>
+        <input class="field-input" type="text" value="${p.active}" placeholder="e.g. Bifenthrin" oninput="updateProductField(${i},'active',this.value)">
+      </div>
+      <div class="field-group" style="margin-bottom:8px;">
+        <label class="field-label">Application Method</label>
+        <input class="field-input" type="text" value="${p.method}" placeholder="e.g. Point of run off" oninput="updateProductField(${i},'method',this.value)">
+      </div>
+      <div class="field-group" style="margin-bottom:0">
+        <label class="field-label">Used For</label>
+        <input class="field-input" type="text" value="${p.usedFor}" placeholder="e.g. Ants, Spiders, Cockroaches" oninput="updateProductField(${i},'usedFor',this.value)">
+      </div>
+    </div>
+  `).join('');
+}
+
+// ══════════════════════════════════════
+// WEATHER API – Open-Meteo (Sydney coords)
+// Falls back gracefully if blocked (CORS / offline)
+// ══════════════════════════════════════
+let manualWeatherMode = false;
+
+function toggleManualWeather() {
+  manualWeatherMode = !manualWeatherMode;
+  const btn = document.getElementById('manual-weather-btn');
+  const fetchBtn = document.getElementById('fetch-weather-btn');
+  const status = document.getElementById('weather-form-status');
+  if (manualWeatherMode) {
+    btn.textContent = 'Auto';
+    btn.classList.remove('outline');
+    fetchBtn.style.display = 'none';
+    status.innerHTML = '<span style="color:var(--purple);font-size:12px;font-weight:600;">✏️ Manual entry mode — fill in fields below</span>';
+  } else {
+    btn.textContent = 'Manual';
+    btn.classList.add('outline');
+    fetchBtn.style.display = '';
+    status.innerHTML = '';
+  }
+}
+
+async function fetchWeather() {
+  // Try Open-Meteo directly (works from browsers, no API key needed)
+  const urls = [
+    'https://api.open-meteo.com/v1/forecast?latitude=-33.8688&longitude=151.2093&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&timezone=Australia%2FSydney',
+    // CORS proxy fallback
+    'https://corsproxy.io/?url=' + encodeURIComponent('https://api.open-meteo.com/v1/forecast?latitude=-33.8688&longitude=151.2093&current=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code&timezone=Australia%2FSydney'),
+  ];
+  let lastErr;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const c = data.current;
+      return {
+        temp: c.temperature_2m.toFixed(1),
+        humid: c.relative_humidity_2m,
+        windSpeed: c.wind_speed_10m.toFixed(1),
+        windDir: degToCompass(c.wind_direction_10m),
+        condition: wmoToCondition(c.weather_code),
+        icon: wmoToEmoji(c.weather_code)
+      };
+    } catch(e) { lastErr = e; }
+  }
+  throw lastErr;
+}
+
+async function fetchWeatherDashboard() {
+  try {
+    const w = await fetchWeather();
+    weatherCache = w;
+    document.getElementById('dw-temp').textContent = `${w.temp} °C`;
+    document.getElementById('dw-humid').textContent = `${w.humid}%`;
+    document.getElementById('dw-wind').textContent = `${w.windSpeed} m/s ${w.windDir}`;
+    document.getElementById('dw-cond').textContent = w.condition;
+    document.getElementById('dash-weather-icon').textContent = w.icon;
+  } catch(e) {
+    document.getElementById('dw-temp').textContent = 'Tap Fetch to retry';
+    document.getElementById('dw-cond').textContent = '—';
+  }
+}
+
+async function fetchWeatherForReport() {
+  const btn = document.getElementById('fetch-weather-btn');
+  const status = document.getElementById('weather-form-status');
+  btn.innerHTML = '<span class="loading-spinner"></span>';
+  btn.disabled = true;
+  status.innerHTML = '<span style="color:var(--sub);font-size:12px;">Fetching Sydney weather…</span>';
+  try {
+    const w = await fetchWeather();
+    weatherCache = w;
+    // Temp: plain number so the number input works
+    document.getElementById('fw-temp').value = w.temp;
+    document.getElementById('fw-humid').value = w.humid;
+    document.getElementById('fw-wind').value = `${w.windSpeed} m/s`;
+    // Set select for wind direction
+    const wdSel = document.getElementById('fw-winddir');
+    for (let o of wdSel.options) { if (o.value === w.windDir) { wdSel.value = w.windDir; break; } }
+    // Set conditions select – find closest match
+    const condSel = document.getElementById('fw-cond');
+    const condLower = w.condition.toLowerCase();
+    let matched = false;
+    for (let o of condSel.options) {
+      if (o.value && o.value.toLowerCase().includes(condLower.split(' ')[0])) {
+        condSel.value = o.value; matched = true; break;
+      }
+    }
+    if (!matched) condSel.value = '';
+    status.innerHTML = `<span class="weather-fetched">✓ Live data fetched — ${w.condition}, ${w.temp}°C</span>`;
+  } catch(e) {
+    status.innerHTML = `<span class="weather-error">⚠ Could not fetch live data — switch to <b>Manual</b> to enter conditions</span>`;
+  }
+  btn.innerHTML = 'Fetch ›';
+  btn.disabled = false;
+}
+
+function degToCompass(deg) {
+  const dirs = ['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+function wmoToCondition(code) {
+  if (code === 0) return 'Clear';
+  if (code <= 3) return 'Partly Cloudy';
+  if (code <= 9) return 'Mostly Cloudy';
+  if (code <= 19) return 'Foggy';
+  if (code <= 29) return 'Drizzle';
+  if (code <= 39) return 'Dust / Sand';
+  if (code <= 49) return 'Foggy';
+  if (code <= 59) return 'Drizzle';
+  if (code <= 69) return 'Rain';
+  if (code <= 79) return 'Snow';
+  if (code <= 84) return 'Rain Showers';
+  if (code <= 89) return 'Hail';
+  if (code <= 99) return 'Thunderstorm';
+  return 'Unknown';
+}
+
+function wmoToEmoji(code) {
+  if (code === 0) return '☀️';
+  if (code <= 3) return '⛅';
+  if (code <= 9) return '☁️';
+  if (code <= 49) return '🌫️';
+  if (code <= 69) return '🌧️';
+  if (code <= 79) return '❄️';
+  if (code <= 84) return '🌦️';
+  if (code <= 89) return '🌨️';
+  return '⛈️';
+}
+
+// ══════════════════════════════════════
+// SIGNATURES
+// ══════════════════════════════════════
+let sigPads = {};
+
+function initSignatures() {
+  setupSigCanvas('tech');
+  setupSigCanvas('client');
+}
+
+function setupSigCanvas(which) {
+  const canvas = document.getElementById(`${which}-sig-canvas`);
+  const placeholder = document.getElementById(`${which}-sig-placeholder`);
+  const ctx = canvas.getContext('2d');
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.lineWidth = 2.5;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  sigPads[which] = { ctx, canvas, drawing: false, hasSig: false };
+
+  const getPos = (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const src = e.touches ? e.touches[0] : e;
+    return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY };
+  };
+
+  canvas.addEventListener('mousedown', e => { sigPads[which].drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); placeholder.style.display = 'none'; });
+  canvas.addEventListener('mousemove', e => { if (!sigPads[which].drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); sigPads[which].hasSig = true; });
+  canvas.addEventListener('mouseup', () => { sigPads[which].drawing = false; });
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); sigPads[which].drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); placeholder.style.display = 'none'; }, { passive: false });
+  canvas.addEventListener('touchmove', e => { e.preventDefault(); if (!sigPads[which].drawing) return; const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); sigPads[which].hasSig = true; }, { passive: false });
+  canvas.addEventListener('touchend', () => { sigPads[which].drawing = false; });
+}
+
+function clearSig(which) {
+  const { ctx, canvas } = sigPads[which];
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  sigPads[which].hasSig = false;
+  document.getElementById(`${which}-sig-placeholder`).style.display = '';
+}
+
+function getSigDataURL(which) {
+  if (!sigPads[which] || !sigPads[which].hasSig) return null;
+  return sigPads[which].canvas.toDataURL('image/png');
+}
+
+// ══════════════════════════════════════
+// FORM NAV
+// ══════════════════════════════════════
+function startNewReport() {
+  // Reset
+  currentReport = {};
+  selectedPests = [];
+  selectedAreas = [];
+  selectedTreatments = [];
+  selectedSeverity = '';
+  selectedRisks = [];
+  selectedPpe = [];
+  jobProducts = [];
+  document.querySelectorAll('.pest-chip').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.area-chip').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.treatment-chip').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.custom-cb').forEach(e => e.classList.remove('checked'));
+  document.querySelectorAll('.ppe-chip').forEach(e => e.classList.remove('selected'));
+  document.querySelectorAll('.sev-btn').forEach(e => e.className = 'sev-btn');
+  ['f-client-name','f-client-email','f-client-phone','f-address',
+   'f-treatment-desc','f-tech-notes','f-warranty','f-other-pest',
+   'fw-wind','fw-winddir','fw-temp','fw-humid','fw-cond',
+   'f-ppe-other','f-precautions','f-hygiene'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('f-prop-type').selectedIndex = 0;
+  document.getElementById('f-job-type').selectedIndex = 0;
+  document.getElementById('f-holding').selectedIndex = 1;
+  setTodayDefaults();
+  clearSig('tech');
+  clearSig('client');
+  renderJobProducts([]);
+  document.getElementById('weather-form-status').innerHTML = '';
+  // Reset address state
+  addrManualMode = false;
+  confirmedAddress = '';
+  const autoWrap = document.getElementById('addr-auto-wrap');
+  const manualInput = document.getElementById('f-address');
+  const addrConfirmed = document.getElementById('addr-confirmed');
+  const modeBtn = document.getElementById('addr-mode-btn');
+  if (autoWrap) autoWrap.style.display = '';
+  if (manualInput) { manualInput.style.display = 'none'; manualInput.value = ''; }
+  if (addrConfirmed) addrConfirmed.style.display = 'none';
+  if (modeBtn) modeBtn.textContent = 'Manual';
+  const addrSearch = document.getElementById('f-address-search');
+  if (addrSearch) addrSearch.value = '';
+  loadSettings();
+  showScreen('screen-step1');
+}
+
+function goStep2() {
+  const name = document.getElementById('f-client-name').value.trim();
+  const addr = getAddress();
+  if (!name) { showToast('Please enter client name'); return; }
+  if (!addr) { showToast('Please enter treatment address'); return; }
+  const settings = loadSettingsData();
+  renderJobProducts(settings.products || []);
+  showScreen('screen-step2');
+}
+
+function goStep3() {
+  showScreen('screen-step3');
+  // Auto-fetch weather if not already fetched
+  if (!document.getElementById('fw-temp').value) {
+    fetchWeatherForReport();
+  }
+}
+
+// ══════════════════════════════════════
+// GENERATE REPORT
+// ══════════════════════════════════════
+function generateReport() {
+  const settings = loadSettingsData();
+  const pestNames = selectedPests.map(id => PESTS.find(p => p.id === id)?.name || id);
+  const otherPest = document.getElementById('f-other-pest').value.trim();
+  if (otherPest) pestNames.push(otherPest);
+
+  const report = {
+    id: Date.now().toString(),
+    createdAt: new Date().toISOString(),
+    // Company / tech
+    company: settings.company || '',
+    techName: settings.techName || '',
+    licence: settings.licence || '',
+    vreg: settings.vreg || '',
+    abn: settings.abn || '',
+    companyPhone: settings.phone || '',
+    companyEmail: settings.email || '',
+    companyAddress: settings.address || '',
+    companyWebsite: settings.website || '',
+    // Client
+    clientName: document.getElementById('f-client-name').value.trim(),
+    clientEmail: document.getElementById('f-client-email').value.trim(),
+    clientPhone: document.getElementById('f-client-phone').value.trim(),
+    address: getAddress(),
+    propType: document.getElementById('f-prop-type').value,
+    jobType: document.getElementById('f-job-type').value,
+    date: document.getElementById('f-date').value,
+    startTime: document.getElementById('f-start-time').value,
+    endTime: document.getElementById('f-end-time').value,
+    // Pests & treatment
+    pests: pestNames,
+    severity: selectedSeverity,
+    areas: [...selectedAreas],
+    treatments: [...selectedTreatments],
+    treatmentDesc: document.getElementById('f-treatment-desc').value.trim(),
+    // Products
+    products: jobProducts.map(jp => {
+      const lib = (settings.products || [])[jp.libIdx] || {};
+      const amt = jp.amountUsed === '__custom__' ? '' : (jp.amountUsed || '');
+      return { name: lib.name, active: lib.active, method: lib.method, batchNo: jp.batchNo, amountUsed: amt };
+    }),
+    // Step 3
+    weather: {
+      windSpeed: document.getElementById('fw-wind').value,
+      windDir: document.getElementById('fw-winddir').value,
+      temp: document.getElementById('fw-temp').value,
+      humid: document.getElementById('fw-humid').value,
+      condition: document.getElementById('fw-cond').value
+    },
+    risks: [...selectedRisks],
+    ppe: (() => {
+      const chips = selectedPpe.map(id => PPE_ITEMS.find(p => p.id === id)?.label || id);
+      const other = document.getElementById('f-ppe-other').value.trim();
+      if (other) chips.push(other);
+      return chips.join(', ') || 'Not applicable';
+    })(),
+    precautions: document.getElementById('f-precautions').value.trim(),
+    hygiene: document.getElementById('f-hygiene').value.trim(),
+    techNotes: document.getElementById('f-tech-notes').value.trim(),
+    warranty: document.getElementById('f-warranty').value.trim(),
+    holdingPeriod: document.getElementById('f-holding').value,
+    // Signatures
+    techSig: getSigDataURL('tech'),
+    clientSig: getSigDataURL('client'),
+  };
+
+  // Save
+  const reports = getReports();
+  reports.unshift(report);
+  localStorage.setItem('pestable_reports', JSON.stringify(reports));
+
+  showToast('Report saved!');
+  currentReportId = report.id;
+  renderReportView(report);
+  showScreen('screen-report-view');
+}
+
+// ══════════════════════════════════════
+// REPORTS STORAGE
+// ══════════════════════════════════════
+function getReports() {
+  try { return JSON.parse(localStorage.getItem('pestable_reports') || '[]'); } catch { return []; }
+}
+
+function refreshDashboard() {
+  const reports = getReports();
+  document.getElementById('dash-total').textContent = reports.length;
+
+  let pestCount = 0, highCount = 0;
+  const thisMonth = new Date().getMonth();
+  let monthCount = 0;
+  reports.forEach(r => {
+    pestCount += (r.pests || []).length;
+    if (r.severity === 'High') highCount++;
+    if (new Date(r.createdAt).getMonth() === thisMonth) monthCount++;
+  });
+  document.getElementById('dash-pests').textContent = pestCount;
+  document.getElementById('dash-jobs').textContent = monthCount;
+  document.getElementById('dash-high').textContent = highCount;
+
+  const list = document.getElementById('reports-list');
+  if (reports.length === 0) {
+    list.innerHTML = '<div class="empty-state"><div class="emoji">📋</div><p>No reports yet.<br>Tap "Create New Record" to begin.</p></div>';
+    return;
+  }
+  list.innerHTML = reports.map(r => {
+    const date = r.date ? formatDate(r.date) : formatDate(r.createdAt.split('T')[0]);
+    const sevClass = r.severity ? `sev-${r.severity.toLowerCase()}` : 'sev-low';
+    const pestList = (r.pests || []).slice(0,2).join(', ') + (r.pests?.length > 2 ? ` +${r.pests.length-2}` : '');
+    return `
+    <div class="report-item" onclick="openReport('${r.id}')">
+      <div class="report-icon">📄</div>
+      <div class="report-info">
+        <div class="name">${r.clientName || 'Unknown Client'}</div>
+        <div class="meta">${date} · ${r.address || '—'}</div>
+        <div class="meta" style="margin-top:3px;">${pestList || 'No pests recorded'}</div>
+      </div>
+      ${r.severity ? `<span class="severity-badge ${sevClass}">${r.severity}</span>` : ''}
+      <div class="report-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+
+function openReport(id) {
+  const reports = getReports();
+  const report = reports.find(r => r.id === id);
+  if (!report) return;
+  currentReportId = id;
+  renderReportView(report);
+  showScreen('screen-report-view');
+}
+
+function deleteCurrentReport() {
+  if (!confirm('Delete this report? This cannot be undone.')) return;
+  let reports = getReports();
+  reports = reports.filter(r => r.id !== currentReportId);
+  localStorage.setItem('pestable_reports', JSON.stringify(reports));
+  showToast('Report deleted');
+  showScreen('screen-dashboard');
+}
+
+// ══════════════════════════════════════
+// REPORT VIEW (on-screen)
+// ══════════════════════════════════════
+function renderReportView(r) {
+  const el = document.getElementById('report-view-content');
+  const sevClass = r.severity ? `severity-badge sev-${r.severity.toLowerCase()}` : '';
+
+  el.innerHTML = `
+    <!-- Header card -->
+    <div class="report-view-card">
+      <div class="rvc-title">Job Summary</div>
+      <div class="rvc-row"><span class="rvc-key">Company</span><span class="rvc-val">${r.company || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Technician</span><span class="rvc-val">${r.techName || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Licence</span><span class="rvc-val">${r.licence || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Date</span><span class="rvc-val">${formatDate(r.date)} ${r.startTime ? '· ' + r.startTime : ''} ${r.endTime ? '– ' + r.endTime : ''}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Job Type</span><span class="rvc-val">${r.jobType || '—'}</span></div>
+    </div>
+
+    <!-- Client -->
+    <div class="report-view-card">
+      <div class="rvc-title">Client</div>
+      <div class="rvc-row"><span class="rvc-key">Name</span><span class="rvc-val">${r.clientName || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Address</span><span class="rvc-val">${r.address || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Property</span><span class="rvc-val">${r.propType || '—'}</span></div>
+      ${r.clientPhone ? `<div class="rvc-row"><span class="rvc-key">Phone</span><span class="rvc-val">${r.clientPhone}</span></div>` : ''}
+      ${r.clientEmail ? `<div class="rvc-row"><span class="rvc-key">Email</span><span class="rvc-val">${r.clientEmail}</span></div>` : ''}
+    </div>
+
+    <!-- Pests -->
+    <div class="report-view-card">
+      <div class="rvc-title">Pests Identified</div>
+      <div class="pests-pills">${(r.pests||[]).map(p=>`<span class="pest-pill">${p}</span>`).join('') || '—'}</div>
+      <div style="margin-top:10px;" class="rvc-row"><span class="rvc-key">Severity</span><span class="rvc-val">${r.severity ? `<span class="${sevClass}">${r.severity}</span>` : '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Areas</span><span class="rvc-val">${(r.areas||[]).join(', ') || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Treatment</span><span class="rvc-val">${(r.treatments||[]).join(', ') || '—'}</span></div>
+      ${r.treatmentDesc ? `<div style="margin-top:8px;"><div class="field-label">Description</div><div class="rvc-full">${r.treatmentDesc}</div></div>` : ''}
+    </div>
+
+    <!-- Products -->
+    ${r.products?.length ? `
+    <div class="report-view-card">
+      <div class="rvc-title">Products Applied</div>
+      ${r.products.map(p=>`
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);">
+          <b style="font-size:14px;">${p.name || '—'}</b>
+          <div class="rvc-row" style="margin-top:4px;"><span class="rvc-key">Active</span><span class="rvc-val">${p.active||'—'}</span></div>
+          <div class="rvc-row"><span class="rvc-key">Method</span><span class="rvc-val">${p.method||'—'}</span></div>
+          <div class="rvc-row"><span class="rvc-key">Batch</span><span class="rvc-val">${p.batchNo||'—'}</span></div>
+          <div class="rvc-row"><span class="rvc-key">Amount</span><span class="rvc-val">${p.amountUsed||'—'}</span></div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <!-- Weather -->
+    <div class="report-view-card">
+      <div class="rvc-title">Weather Conditions</div>
+      <div class="rvc-row"><span class="rvc-key">Temperature</span><span class="rvc-val">${r.weather?.temp || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Humidity</span><span class="rvc-val">${r.weather?.humid || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Wind Speed</span><span class="rvc-val">${r.weather?.windSpeed || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Wind Dir</span><span class="rvc-val">${r.weather?.windDir || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Conditions</span><span class="rvc-val">${r.weather?.condition || '—'}</span></div>
+    </div>
+
+    <!-- Site info -->
+    <div class="report-view-card">
+      <div class="rvc-title">Site Risk & Safety</div>
+      ${r.risks?.length ? `<div class="rvc-row"><span class="rvc-key">Risks</span><span class="rvc-val">${r.risks.join(', ')}</span></div>` : ''}
+      ${r.ppe ? `<div class="rvc-row"><span class="rvc-key">PPE</span><span class="rvc-val">${r.ppe}</span></div>` : ''}
+      ${r.precautions ? `<div><div class="field-label" style="margin-top:8px;">Precautions</div><div class="rvc-full">${r.precautions}</div></div>` : ''}
+      ${r.hygiene ? `<div><div class="field-label" style="margin-top:8px;">Hygiene Recommendations</div><div class="rvc-full">${r.hygiene}</div></div>` : ''}
+    </div>
+
+    <!-- Notes -->
+    ${r.techNotes ? `
+    <div class="report-view-card">
+      <div class="rvc-title">Technician Notes</div>
+      <div class="rvc-full">${r.techNotes}</div>
+    </div>` : ''}
+
+    <!-- Aftercare -->
+    <div class="report-view-card">
+      <div class="rvc-title">Aftercare</div>
+      <div class="rvc-row"><span class="rvc-key">Warranty</span><span class="rvc-val">${r.warranty || '—'}</span></div>
+      <div class="rvc-row"><span class="rvc-key">Holding Period</span><span class="rvc-val">${r.holdingPeriod || '—'}</span></div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════
+// PRINT / PDF
+// ══════════════════════════════════════
+function printCurrentReport() {
+  const reports = getReports();
+  const r = reports.find(rp => rp.id === currentReportId);
+  if (!r) { showToast('Report not found'); return; }
+  document.getElementById('print-content').innerHTML = buildPrintHTML(r);
+  document.getElementById('print-overlay').classList.add('visible');
+  document.getElementById('print-overlay').scrollTop = 0;
+}
+
+function closePrintOverlay() {
+  document.getElementById('print-overlay').classList.remove('visible');
+}
+
+function triggerPrint() { window.print(); }
+
+async function exportPDF() {
+  const reports = getReports();
+  const r = reports.find(rp => rp.id === currentReportId);
+  if (!r) return;
+
+  const btn = document.querySelector('.pcb-btn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const PW = 210, PH = 297;
+    const ML = 14, MR = 14, MT = 14;
+    const CW = PW - ML - MR;
+    let Y = MT;
+
+    const PURPLE = [91, 45, 142];
+    const PURPLE_LIGHT = [237, 231, 246];
+    const GOLD = [232, 160, 32];
+    const DARK = [26, 26, 46];
+    const GREY = [245, 245, 248];
+    const MID_GREY = [180, 180, 195];
+    const WHITE = [255, 255, 255];
+    const RED = [192, 57, 43];
+
+    const s = v => v || '—';
+    const addPage = () => { doc.addPage(); Y = MT; };
+    const checkY = (needed = 20) => { if (Y + needed > PH - 16) addPage(); };
+
+    // ── HEADER BAR ──
+    doc.setFillColor(...PURPLE);
+    doc.rect(0, 0, PW, 28, 'F');
+    doc.setFillColor(...GOLD);
+    doc.rect(0, 26, PW, 2, 'F');
+
+    doc.setTextColor(...WHITE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(r.company || 'Pest Control Company', ML, 12);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('PEST ADVICE REPORT', ML, 20);
+    doc.setFontSize(8);
+    doc.text(`Treated by: ${s(r.techName)}   |   Licence #: ${s(r.licence)}   |   Vehicle Reg: ${s(r.vreg)}`, ML, 25);
+
+    // Logo placeholder box
+    doc.setFillColor(...PURPLE_LIGHT);
+    doc.setDrawColor(...PURPLE);
+    doc.roundedRect(PW - MR - 22, 3, 22, 22, 3, 3, 'FD');
+    doc.setTextColor(...PURPLE);
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'bold');
+    doc.text('YOUR', PW - MR - 11, 11, { align: 'center' });
+    doc.text('LOGO', PW - MR - 11, 16, { align: 'center' });
+    doc.text('HERE', PW - MR - 11, 21, { align: 'center' });
+
+    Y = 34;
+
+    // ── HELPER: section header ──
+    const sectionHead = (title) => {
+      checkY(14);
+      doc.setFillColor(...PURPLE);
+      doc.rect(ML, Y, CW, 7, 'F');
+      doc.setTextColor(...WHITE);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text(title.toUpperCase(), ML + 3, Y + 5);
+      Y += 7;
+    };
+
+    // ── HELPER: key-value row ──
+    const kvRow = (key, val, col2Key, col2Val) => {
+      checkY(7);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.setTextColor(...MID_GREY);
+      doc.text(key, ML + 2, Y + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...DARK);
+      doc.text(String(s(val)), ML + 38, Y + 4);
+      if (col2Key) {
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...MID_GREY);
+        doc.text(col2Key, ML + CW/2 + 2, Y + 4);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...DARK);
+        doc.text(String(s(col2Val)), ML + CW/2 + 38, Y + 4);
+      }
+      doc.setDrawColor(230, 230, 238);
+      doc.line(ML, Y + 6.5, ML + CW, Y + 6.5);
+      Y += 7;
+    };
+
+    // ── HELPER: section body open/close ──
+    const startBody = () => {
+      doc.setFillColor(...GREY);
+      // will close when we know height
+    };
+
+    // ── INFO GRID: Date / Times ──
+    doc.setFillColor(...GREY);
+    doc.rect(ML, Y, CW/3 - 1, 14, 'F');
+    doc.rect(ML + CW/3 + 1, Y, CW/3 - 1, 14, 'F');
+    doc.rect(ML + 2*(CW/3) + 2, Y, CW/3 - 2, 14, 'F');
+
+    const infoCell = (label, val, x) => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...MID_GREY);
+      doc.text(label.toUpperCase(), x + 2, Y + 5);
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(...DARK);
+      doc.text(s(val), x + 2, Y + 11);
+    };
+    infoCell('Date Treated', formatDate(r.date), ML);
+    infoCell('Start Time', r.startTime, ML + CW/3 + 1);
+    infoCell('Finish Time', r.endTime, ML + 2*(CW/3) + 2);
+    Y += 16;
+
+    doc.setFillColor(...GREY);
+    doc.rect(ML, Y, CW/3 - 1, 14, 'F');
+    doc.rect(ML + CW/3 + 1, Y, CW/3 - 1, 14, 'F');
+    doc.rect(ML + 2*(CW/3) + 2, Y, CW/3 - 2, 14, 'F');
+    infoCell('Client Name', r.clientName, ML);
+    infoCell('Property Type', r.propType, ML + CW/3 + 1);
+    infoCell('Job Type', r.jobType, ML + 2*(CW/3) + 2);
+    Y += 17;
+
+    // ── CLIENT & TREATMENT ──
+    sectionHead('Client & Treatment Information');
+    doc.setFillColor(250, 250, 252);
+    const clientBoxY = Y;
+    kvRow('Treatment Address:', r.address);
+    kvRow('Pests Treated:', (r.pests||[]).join(', '));
+    kvRow('Severity:', r.severity, 'Areas Inspected:', (r.areas||[]).join(', ') || '—');
+    kvRow('Treatment Methods:', (r.treatments||[]).join(', '));
+    doc.setDrawColor(...PURPLE);
+    doc.rect(ML, clientBoxY, CW, Y - clientBoxY, 'S');
+    Y += 2;
+
+    // ── TREATMENT DESCRIPTION ──
+    if (r.treatmentDesc) {
+      checkY(16);
+      sectionHead('Treatment Description');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+      const lines = doc.splitTextToSize(r.treatmentDesc, CW - 4);
+      const bH = lines.length * 4.5 + 4;
+      checkY(bH);
+      doc.setFillColor(250, 250, 252);
+      doc.setDrawColor(...PURPLE);
+      doc.rect(ML, Y, CW, bH, 'FD');
+      doc.text(lines, ML + 2, Y + 5);
+      Y += bH + 3;
+    }
+
+    // ── PRODUCTS ──
+    if (r.products && r.products.length) {
+      checkY(20);
+      sectionHead('Products Applied');
+      doc.autoTable({
+        startY: Y,
+        margin: { left: ML, right: MR },
+        head: [['Product Name', 'Active Ingredient', 'Batch No.', 'Amount Used', 'Application Method']],
+        body: r.products.map(p => [s(p.name), s(p.active), s(p.batchNo), s(p.amountUsed), s(p.method)]),
+        styles: { fontSize: 8, cellPadding: 3, textColor: DARK },
+        headStyles: { fillColor: PURPLE_LIGHT, textColor: PURPLE, fontStyle: 'bold', fontSize: 8 },
+        alternateRowStyles: { fillColor: [249, 249, 252] },
+        columnStyles: { 0: { fontStyle: 'bold' } },
+        tableLineColor: [210, 210, 225],
+        tableLineWidth: 0.3,
+      });
+      Y = doc.lastAutoTable.finalY + 4;
+    }
+
+    // ── WEATHER ──
+    checkY(28);
+    sectionHead('Weather Conditions at Time of Treatment');
+    const wCols = 5;
+    const wW = CW / wCols;
+    const wLabels = ['Wind Speed', 'Wind Direction', 'Temperature', 'Humidity', 'Conditions'];
+    const wVals = [s(r.weather?.windSpeed), s(r.weather?.windDir),
+                   r.weather?.temp ? r.weather.temp + ' °C' : '—',
+                   r.weather?.humid ? r.weather.humid + '%' : '—',
+                   s(r.weather?.condition)];
+    wLabels.forEach((lbl, ci) => {
+      const x = ML + ci * wW;
+      doc.setFillColor(ci % 2 === 0 ? 240 : 245, 240, 248);
+      doc.rect(x, Y, wW - 0.5, 14, 'F');
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(...MID_GREY);
+      doc.text(lbl, x + wW/2, Y + 5, { align: 'center' });
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...DARK);
+      doc.text(wVals[ci], x + wW/2, Y + 11, { align: 'center' });
+    });
+    Y += 17;
+
+    // ── RISK ASSESSMENT ──
+    checkY(36);
+    sectionHead('Site Risk Assessment');
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(120, 120, 140);
+    doc.text('Was there a risk to any of the following:', ML + 2, Y + 5);
+    Y += 7;
+    const riskCols = 3;
+    const riskW = CW / riskCols;
+    RISKS.forEach((risk, ri) => {
+      const col = ri % riskCols;
+      const row = Math.floor(ri / riskCols);
+      const x = ML + col * riskW;
+      const ry = Y + row * 7;
+      if (col === 0 && row > 0) checkY(7);
+      const checked = (r.risks||[]).includes(risk);
+      doc.setFillColor(checked ? ...PURPLE : ...WHITE);
+      doc.setDrawColor(checked ? ...PURPLE : 180, 180, 195);
+      doc.rect(x + 1, ry, 4, 4, 'FD');
+      if (checked) {
+        doc.setTextColor(...WHITE); doc.setFontSize(7);
+        doc.text('✓', x + 1.8, ry + 3.2);
+      }
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+      doc.setTextColor(checked ? ...PURPLE : ...DARK);
+      doc.text(risk, x + 7, ry + 3.5);
+    });
+    Y += Math.ceil(RISKS.length / riskCols) * 7 + 4;
+
+    // ── PPE & SAFETY ──
+    checkY(20);
+    sectionHead('PPE & Safety');
+    const ppeBoxY = Y;
+    kvRow('PPE Worn:', r.ppe);
+    if (r.precautions) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...RED);
+      doc.text('Precautions undertaken at the site to ensure risks are minimised:', ML + 2, Y + 4);
+      Y += 6;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+      const pLines = doc.splitTextToSize(r.precautions, CW - 6);
+      doc.text(pLines, ML + 2, Y + 4);
+      Y += pLines.length * 4.5 + 4;
+      doc.line(ML, Y, ML + CW, Y); Y += 1;
+    }
+    if (r.hygiene) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...RED);
+      doc.text('Hygiene recommendations / solutions for hygiene problems:', ML + 2, Y + 4);
+      Y += 6;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+      const hLines = doc.splitTextToSize(r.hygiene, CW - 6);
+      doc.text(hLines, ML + 2, Y + 4);
+      Y += hLines.length * 4.5 + 4;
+    }
+    doc.setDrawColor(...PURPLE);
+    doc.rect(ML, ppeBoxY, CW, Y - ppeBoxY, 'S');
+    Y += 3;
+
+    // ── TECH NOTES ──
+    if (r.techNotes) {
+      checkY(16);
+      sectionHead('Technician Recommendations');
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...DARK);
+      const nLines = doc.splitTextToSize(r.techNotes, CW - 4);
+      const nH = nLines.length * 4.5 + 6;
+      checkY(nH);
+      doc.setFillColor(250, 250, 252); doc.setDrawColor(...PURPLE);
+      doc.rect(ML, Y, CW, nH, 'FD');
+      doc.text(nLines, ML + 2, Y + 5);
+      Y += nH + 3;
+    }
+
+    // ── AFTERCARE ──
+    checkY(18);
+    sectionHead('Aftercare');
+    kvRow('Warranty / Aftercare Period:', r.warranty, 'Holding Period (re-entry):', r.holdingPeriod);
+    Y += 3;
+
+    // ── SIGNATURES ──
+    checkY(40);
+    sectionHead('Signatures');
+    const sigW = (CW - 6) / 2;
+    // Technician
+    doc.setFillColor(...GREY); doc.setDrawColor(...PURPLE);
+    doc.rect(ML, Y, sigW, 32, 'FD');
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...PURPLE);
+    doc.setFont('helvetica', 'bolditalic');
+    doc.text("Technician's Signature", ML + sigW/2, Y + 6, { align: 'center' });
+    if (r.techSig) {
+      try { doc.addImage(r.techSig, 'PNG', ML + 4, Y + 8, sigW - 8, 18); } catch(e){}
+    }
+    doc.setDrawColor(...MID_GREY);
+    doc.line(ML + 4, Y + 27, ML + sigW - 4, Y + 27);
+    // Client
+    doc.setFillColor(...GREY); doc.setDrawColor(...PURPLE);
+    doc.rect(ML + sigW + 6, Y, sigW, 32, 'FD');
+    doc.setFont('helvetica', 'bolditalic'); doc.setFontSize(9); doc.setTextColor(...PURPLE);
+    doc.text("Client's Signature", ML + sigW + 6 + sigW/2, Y + 6, { align: 'center' });
+    if (r.clientSig) {
+      try { doc.addImage(r.clientSig, 'PNG', ML + sigW + 10, Y + 8, sigW - 8, 18); } catch(e){}
+    }
+    doc.line(ML + sigW + 10, Y + 27, ML + sigW * 2 + 2, Y + 27);
+    Y += 36;
+
+    // ── CERTIFICATION ──
+    checkY(12);
+    doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(...RED);
+    const certText = 'I certify that this is a true and accurate record of this treatment & all MSDS(s) & Label(s) have been followed & Correct PPE was worn throughout the treatment.';
+    const certLines = doc.splitTextToSize(certText, CW);
+    doc.text(certLines, ML + CW/2, Y + 4, { align: 'center' });
+    Y += certLines.length * 4.5 + 4;
+
+    // ── FOOTER ──
+    const footerY = PH - 14;
+    doc.setFillColor(50, 50, 60);
+    doc.rect(0, footerY - 2, PW, 16, 'F');
+    doc.setFillColor(...GOLD);
+    doc.rect(0, footerY - 2, PW, 1.5, 'F');
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...WHITE);
+    const footerParts = [
+      r.company || '',
+      r.companyPhone ? `Ph: ${r.companyPhone}` : '',
+      r.companyEmail || '',
+      r.abn ? `ABN: ${r.abn}` : '',
+    ].filter(Boolean).join('   |   ');
+    doc.text(footerParts, PW/2, footerY + 3, { align: 'center' });
+    if (r.companyAddress) {
+      doc.setFontSize(7); doc.setTextColor(200, 200, 210);
+      doc.text(r.companyAddress, PW/2, footerY + 8, { align: 'center' });
+    }
+
+    // ── SAVE ──
+    const filename = `PestReport_${(r.clientName||'report').replace(/\s+/g,'_')}_${r.date||'nodate'}.pdf`;
+    doc.save(filename);
+    showToast('PDF exported!');
+  } catch(err) {
+    console.error(err);
+    showToast('Export failed — try Print instead');
+    window.print();
+  }
+
+  btn.textContent = '⬇ Export PDF';
+  btn.disabled = false;
+}
+
+function buildPrintHTML(r) {
+  const techSigImg = r.techSig ? `<img src="${r.techSig}" style="max-height:55px;max-width:180px;display:block;margin:0 auto;">` : '<div style="height:55px;"></div>';
+  const clientSigImg = r.clientSig ? `<img src="${r.clientSig}" style="max-height:55px;max-width:180px;display:block;margin:0 auto;">` : '<div style="height:55px;"></div>';
+
+  const productRows = (r.products||[]).map(p => `
+    <tr>
+      <td style="font-weight:600;">${p.name||'—'}</td>
+      <td>${p.active||'—'}</td>
+      <td>${p.batchNo||'—'}</td>
+      <td>${p.amountUsed||'—'}</td>
+      <td>${p.method||'—'}</td>
+    </tr>`).join('');
+
+  const riskHTML = RISKS.map(risk => {
+    const checked = (r.risks||[]).includes(risk);
+    return `<div style="display:flex;align-items:center;gap:5px;font-size:10px;margin-bottom:3px;">
+      <div style="width:11px;height:11px;border:1.5px solid ${checked?'#5B2D8E':'#999'};border-radius:2px;background:${checked?'#5B2D8E':'white'};flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+        ${checked ? '<span style="color:white;font-size:8px;line-height:1;">✓</span>' : ''}
+      </div>
+      <span>${risk}</span>
+    </div>`;
+  }).join('');
+
+  const s = (str) => str || '—';
+
+  return `
+  <style>
+    #print-content * { font-family: -apple-system, Arial, sans-serif; box-sizing: border-box; }
+    .pr-h { display:flex; justify-content:space-between; align-items:flex-start; padding-bottom:10px; border-bottom:3px solid #5B2D8E; margin-bottom:12px; }
+    .pr-co { font-size:19px; font-weight:800; color:#5B2D8E; }
+    .pr-title { font-size:14px; font-weight:700; margin-top:2px; }
+    .pr-meta { font-size:10px; color:#666; margin-top:3px; }
+    .logo-ph { width:56px;height:56px;border:2px solid #5B2D8E;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#5B2D8E;font-weight:700;text-align:center;background:#EDE7F6;line-height:1.4; }
+    .pr-grid3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px; }
+    .pr-grid2 { display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px; }
+    .pr-cell { background:#f5f5f5;padding:6px 8px;border-radius:4px; }
+    .pr-cell .k { font-size:9px;text-transform:uppercase;color:#888;font-weight:700;margin-bottom:1px; }
+    .pr-cell .v { font-size:11px;font-weight:700; }
+    .pr-sh { background:#5B2D8E;color:white;padding:5px 9px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;border-radius:4px 4px 0 0;margin-top:8px; }
+    .pr-sb { border:1px solid #ddd;border-top:none;padding:8px 10px;border-radius:0 0 4px 4px;margin-bottom:4px; }
+    .kv { display:flex;gap:6px;margin-bottom:4px;font-size:10px; }
+    .kv .k { color:#666;font-weight:600;min-width:110px;flex-shrink:0; }
+    .kv .v { font-weight:700; }
+    .pr-table { width:100%;border-collapse:collapse;margin-top:4px; }
+    .pr-table th { background:#EDE7F6;font-size:9px;font-weight:700;padding:5px 6px;text-align:left;color:#5B2D8E;border:1px solid #ddd; }
+    .pr-table td { font-size:9px;padding:5px 6px;border:1px solid #ddd;vertical-align:top; }
+    .pr-table tr:nth-child(even) td { background:#fafafa; }
+    .wrow { display:grid;grid-template-columns:repeat(5,1fr);gap:4px; }
+    .wcell { background:#f0f0f0;padding:5px;border-radius:4px;text-align:center; }
+    .wcell .k { font-size:8px;color:#888;font-weight:600; }
+    .wcell .v { font-size:10px;font-weight:700; }
+    .risks-grid { display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px;margin-top:5px; }
+    .sig-row { display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px; }
+    .sig-box { border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center; }
+    .sig-lbl { font-size:10px;font-weight:700;color:#5B2D8E;font-style:italic;margin-bottom:6px; }
+    .sig-area { min-height:55px;border-top:1px solid #ddd;padding-top:6px; }
+    .cert { font-size:9px;color:#C0392B;text-align:center;font-style:italic;margin-top:10px;padding:0 20px; }
+    .pr-footer { margin-top:12px;background:#333;color:white;padding:8px 14px;border-radius:4px;font-size:9px;text-align:center;border-top:3px solid #E8A020; }
+  </style>
+
+  <!-- Header -->
+  <div class="pr-h">
+    <div>
+      <div class="pr-co">${s(r.company)}</div>
+      <div class="pr-title">Pest Advice Report</div>
+      <div class="pr-meta">Treated by: ${s(r.techName)} &nbsp;|&nbsp; Licence #: ${s(r.licence)} &nbsp;|&nbsp; Vehicle Reg: ${s(r.vreg)}</div>
+    </div>
+    <div class="logo-ph">YOUR<br>LOGO</div>
+  </div>
+
+  <!-- Top grid -->
+  <div class="pr-grid3">
+    <div class="pr-cell"><div class="k">Date Treated</div><div class="v">${formatDate(r.date)}</div></div>
+    <div class="pr-cell"><div class="k">Start Time</div><div class="v">${s(r.startTime)}</div></div>
+    <div class="pr-cell"><div class="k">Finish Time</div><div class="v">${s(r.endTime)}</div></div>
+  </div>
+  <div class="pr-grid3">
+    <div class="pr-cell"><div class="k">Client Name</div><div class="v">${s(r.clientName)}</div></div>
+    <div class="pr-cell"><div class="k">Property Type</div><div class="v">${s(r.propType)}</div></div>
+    <div class="pr-cell"><div class="k">Job Type</div><div class="v">${s(r.jobType)}</div></div>
+  </div>
+
+  <!-- Client & treatment -->
+  <div class="pr-sh">Client &amp; Treatment Information</div>
+  <div class="pr-sb">
+    <div class="kv"><span class="k">Treatment Address:</span><span class="v">${s(r.address)}</span></div>
+    <div class="kv"><span class="k">Pests Treated:</span><span class="v">${(r.pests||[]).join(', ') || '—'}</span></div>
+    <div class="kv"><span class="k">Severity:</span><span class="v">${s(r.severity)}</span></div>
+    <div class="kv"><span class="k">Areas Inspected:</span><span class="v">${(r.areas||[]).join(', ') || '—'}</span></div>
+    <div class="kv"><span class="k">Treatment Methods:</span><span class="v">${(r.treatments||[]).join(', ') || '—'}</span></div>
+  </div>
+
+  ${r.treatmentDesc ? `
+  <div class="pr-sh">Treatment Description</div>
+  <div class="pr-sb" style="white-space:pre-wrap;line-height:1.6;font-size:10px;">${r.treatmentDesc}</div>` : ''}
+
+  ${(r.products||[]).length ? `
+  <div class="pr-sh">Products Applied</div>
+  <div class="pr-sb">
+    <table class="pr-table">
+      <thead><tr><th>Product Name</th><th>Active Ingredient</th><th>Batch No.</th><th>Amount Used</th><th>Application Method</th></tr></thead>
+      <tbody>${productRows}</tbody>
+    </table>
+  </div>` : ''}
+
+  <!-- Weather -->
+  <div class="pr-sh">Weather Conditions at Time of Treatment</div>
+  <div class="pr-sb">
+    <div class="wrow">
+      <div class="wcell"><div class="k">Wind Speed</div><div class="v">${s(r.weather?.windSpeed)}</div></div>
+      <div class="wcell"><div class="k">Wind Dir</div><div class="v">${s(r.weather?.windDir)}</div></div>
+      <div class="wcell"><div class="k">Temp</div><div class="v">${s(r.weather?.temp)}${r.weather?.temp ? '°C' : ''}</div></div>
+      <div class="wcell"><div class="k">Humidity</div><div class="v">${s(r.weather?.humid)}${r.weather?.humid ? '%' : ''}</div></div>
+      <div class="wcell"><div class="k">Conditions</div><div class="v">${s(r.weather?.condition)}</div></div>
+    </div>
+  </div>
+
+  <!-- Risk assessment -->
+  <div class="pr-sh">Site Risk Assessment</div>
+  <div class="pr-sb">
+    <div style="font-size:10px;color:#666;margin-bottom:5px;">Was there a risk to any of the following:</div>
+    <div class="risks-grid">${riskHTML}</div>
+  </div>
+
+  <!-- PPE & Safety -->
+  <div class="pr-sh">PPE &amp; Safety</div>
+  <div class="pr-sb">
+    <div class="kv"><span class="k">PPE Worn:</span><span class="v">${s(r.ppe)}</span></div>
+    ${r.precautions ? `<div class="kv"><span class="k">Precautions:</span><span class="v">${r.precautions}</span></div>` : ''}
+    ${r.hygiene ? `<div class="kv"><span class="k">Hygiene Advice:</span><span class="v">${r.hygiene}</span></div>` : ''}
+  </div>
+
+  ${r.techNotes ? `
+  <div class="pr-sh">Technician Recommendations</div>
+  <div class="pr-sb" style="white-space:pre-wrap;line-height:1.6;font-size:10px;">${r.techNotes}</div>` : ''}
+
+  <!-- Aftercare -->
+  <div class="pr-sh">Aftercare</div>
+  <div class="pr-sb">
+    <div class="pr-grid2">
+      <div class="kv"><span class="k">Warranty Period:</span><span class="v">${s(r.warranty)}</span></div>
+      <div class="kv"><span class="k">Holding Period:</span><span class="v">${s(r.holdingPeriod)}</span></div>
+    </div>
+  </div>
+
+  <!-- Signatures -->
+  <div class="sig-row">
+    <div class="sig-box">
+      <div class="sig-lbl">Technician's Signature</div>
+      <div class="sig-area">${techSigImg}</div>
+    </div>
+    <div class="sig-box">
+      <div class="sig-lbl">Client's Signature</div>
+      <div class="sig-area">${clientSigImg}</div>
+    </div>
+  </div>
+
+  <div class="cert">I certify that this is a true and accurate record of this treatment &amp; all MSDS(s) &amp; Label(s) have been followed &amp; Correct PPE was worn throughout the treatment.</div>
+
+  <div class="pr-footer">
+    For more information please call ${s(r.company)} on ${s(r.companyPhone)} or via ${s(r.companyEmail)}<br>
+    ${r.companyAddress ? `Address: ${r.companyAddress}` : ''} ${r.abn ? `| ABN: ${r.abn}` : ''}
+  </div>`;
+}
+
+// ══════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════
+function formatDate(str) {
+  if (!str) return '—';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' });
+}
+
+function updateCharCount(el, counterId, max) {
+  document.getElementById(counterId).textContent = el.value.length;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ══════════════════════════════════════
+// BOOT
+// ══════════════════════════════════════
+init();
+</script>
+</body>
+</html>
